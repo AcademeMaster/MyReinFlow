@@ -1,0 +1,84 @@
+wandb_version: 1
+
+dataset:
+  desc: null
+  value: mujoco/pusher/medium-v0
+batch_size:
+  desc: null
+  value: 32
+horizon_steps:
+  desc: null
+  value: 10
+epochs:
+  desc: null
+  value: 1
+lr:
+  desc: null
+  value: 0.0001
+device:
+  desc: null
+  value: cuda
+eval_freq:
+  desc: null
+  value: 1
+inference_steps:
+  desc: null
+  value: 20
+noise_schedule:
+  desc: null
+  value: prioritized
+early_stop_patience:
+  desc: null
+  value: 20
+normalize:
+  desc: null
+  value: false
+method:
+  desc: null
+  value: reflow
+seed:
+  desc: null
+  value: 42
+wandb_project:
+  desc: null
+  value: reinflow
+wandb_run:
+  desc: null
+  value: reflow_mujoco/pusher/medium-v0_1755057095
+output_dir:
+  desc: null
+  value: ./outputs
+max_samples:
+  desc: null
+  value: null
+render:
+  desc: null
+  value: false
+record_video:
+  desc: null
+  value: false
+_wandb:
+  desc: null
+  value:
+    python_version: 3.10.18
+    cli_version: 0.15.3
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1755057107.246535
+    t:
+      1:
+      - 1
+      - 55
+      2:
+      - 1
+      - 55
+      3:
+      - 13
+      - 16
+      - 23
+      4: 3.10.18
+      5: 0.15.3
+      8:
+      - 3
+      - 5

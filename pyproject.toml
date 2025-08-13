@@ -1,0 +1,15 @@
+[project]
+name = "myreinflow"
+version = "0.1.0"
+description = "Implementation of Flow Matching for Reinforcement Learning"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.0.0",
+    "numpy>=1.20.0",
+    "gymnasium>=0.28.0",
+    "minari>=0.4.0",
+    "wandb>=0.15.0",
+    "matplotlib>=3.5.0",
+    "tqdm>=4.65.0"
+]

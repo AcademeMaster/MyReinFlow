@@ -1,0 +1,22 @@
+Traceback (most recent call last):
+  File "d:\PycharmProjects\MyReinFlow\main.py", line 32, in <module>
+    main()
+  File "d:\PycharmProjects\MyReinFlow\main.py", line 20, in main
+    train_main()
+  File "d:\PycharmProjects\MyReinFlow\scripts\train.py", line 88, in main
+    print(f"Creating environment: {env_id}")
+UnboundLocalError: local variable 'env_id' referenced before assignment
+Traceback (most recent call last):
+  File "d:\PycharmProjects\MyReinFlow\main.py", line 32, in <module>
+    main()
+  File "d:\PycharmProjects\MyReinFlow\main.py", line 20, in main
+    train_main()
+  File "d:\PycharmProjects\MyReinFlow\scripts\train.py", line 88, in main
+    print(f"Creating environment: {env_id}")
+UnboundLocalError: local variable 'env_id' referenced before assignment
+Loading Minari dataset: hopper-medium-expert-v2
+Error loading dataset hopper-medium-expert-v2: Dataset hopper-medium-expert-v2 not found locally at C:\Users\32293\.minari\datasets\hopper-medium-expert-v2. Use download=True to download the dataset.
+Trying to load a fallback dataset...
+Trying fallback dataset: hopper-medium-v2
+Trying fallback dataset: halfcheetah-medium-v2
+Trying fallback dataset: walker2d-medium-v2
