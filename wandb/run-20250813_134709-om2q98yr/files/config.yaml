@@ -1,0 +1,69 @@
+wandb_version: 1
+
+dataset_name:
+  desc: null
+  value: mujoco/pusher/expert-v0
+batch_size:
+  desc: null
+  value: 256
+num_epochs:
+  desc: null
+  value: 50
+learning_rate:
+  desc: null
+  value: 0.0003
+hidden_dim:
+  desc: null
+  value: 256
+seed:
+  desc: null
+  value: 42
+project_name:
+  desc: null
+  value: behavioral-cloning
+experiment_name:
+  desc: null
+  value: pusher-expert-bc
+eval_episodes:
+  desc: null
+  value: 10
+eval_freq:
+  desc: null
+  value: 5
+render_mode:
+  desc: null
+  value: human
+record_video:
+  desc: null
+  value: false
+video_dir:
+  desc: null
+  value: videos
+save_model_path:
+  desc: null
+  value: null
+_wandb:
+  desc: null
+  value:
+    python_version: 3.10.18
+    cli_version: 0.15.3
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1755064029.171342
+    t:
+      1:
+      - 1
+      - 55
+      2:
+      - 1
+      - 55
+      3:
+      - 13
+      - 16
+      - 23
+      4: 3.10.18
+      5: 0.15.3
+      8:
+      - 3
+      - 5

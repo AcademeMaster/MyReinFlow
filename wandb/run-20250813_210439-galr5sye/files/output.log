@@ -1,0 +1,13 @@
+加载 Minari 数据集: mujoco/pusher/expert-v0
+开始训练 FQL baseline...
+d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py:332: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  self.scaler = torch.cuda.amp.GradScaler(
+Epoch 1/20:   0%|                                                                     | 0/1934 [00:00<?, ?it/s]d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py:356: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=self.scaler.is_enabled()):
+d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py:374: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=self.scaler.is_enabled()):
+
+
+
+
+

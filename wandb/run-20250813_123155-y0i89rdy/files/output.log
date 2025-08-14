@@ -1,0 +1,46 @@
+
+正在加载数据集: mujoco/pusher/expert-v0
+Epoch 1/50:   0%|                                                                       | 0/20 [00:00<?, ?it/s]C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\nn\modules\loss.py:610: UserWarning: Using a target size (torch.Size([25600, 7])) that is different to the input size (torch.Size([25856, 7])). This will likely lead to incorrect results due to broadcasting. Please ensure they have the same size.
+  return F.mse_loss(input, target, reduction=self.reduction)
+Epoch 1/50:   0%|                                                                       | 0/20 [00:00<?, ?it/s]
+Traceback (most recent call last):
+  File "d:\PycharmProjects\MyReinFlow\run_bc_example.py", line 37, in <module>
+    main()
+  File "d:\PycharmProjects\MyReinFlow\behavioral_cloning.py", line 357, in main
+    trainer.train()
+  File "d:\PycharmProjects\MyReinFlow\behavioral_cloning.py", line 280, in train
+    loss = self.train_step(batch)
+  File "d:\PycharmProjects\MyReinFlow\behavioral_cloning.py", line 213, in train_step
+    loss = self.loss_fn(action_pred, action_target)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\nn\modules\module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\nn\modules\module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\nn\modules\loss.py", line 610, in forward
+    return F.mse_loss(input, target, reduction=self.reduction)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\nn\functional.py", line 3884, in mse_loss
+    expanded_input, expanded_target = torch.broadcast_tensors(input, target)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\functional.py", line 77, in broadcast_tensors
+    return _VF.broadcast_tensors(tensors)  # type: ignore[attr-defined]
+RuntimeError: The size of tensor a (25856) must match the size of tensor b (25600) at non-singleton dimension 0
+Traceback (most recent call last):
+  File "d:\PycharmProjects\MyReinFlow\run_bc_example.py", line 37, in <module>
+    main()
+  File "d:\PycharmProjects\MyReinFlow\behavioral_cloning.py", line 357, in main
+    trainer.train()
+  File "d:\PycharmProjects\MyReinFlow\behavioral_cloning.py", line 280, in train
+    loss = self.train_step(batch)
+  File "d:\PycharmProjects\MyReinFlow\behavioral_cloning.py", line 213, in train_step
+    loss = self.loss_fn(action_pred, action_target)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\nn\modules\module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\nn\modules\module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\nn\modules\loss.py", line 610, in forward
+    return F.mse_loss(input, target, reduction=self.reduction)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\nn\functional.py", line 3884, in mse_loss
+    expanded_input, expanded_target = torch.broadcast_tensors(input, target)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\functional.py", line 77, in broadcast_tensors
+    return _VF.broadcast_tensors(tensors)  # type: ignore[attr-defined]
+RuntimeError: The size of tensor a (25856) must match the size of tensor b (25600) at non-singleton dimension 0
+开始训练...

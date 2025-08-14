@@ -1,0 +1,211 @@
+2025-08-13 13:18:47,231 INFO    StreamThr :5868 [internal.py:wandb_internal():86] W&B internal server running at pid: 5868, started at: 2025-08-13 13:18:47.231779
+2025-08-13 13:18:47,232 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: status
+2025-08-13 13:18:47,233 INFO    WriterThread:5868 [datastore.py:open_for_write():85] open: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\run-z7t59lgp.wandb
+2025-08-13 13:18:47,237 DEBUG   SenderThread:5868 [sender.py:send():375] send: header
+2025-08-13 13:18:52,275 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 13:18:57,315 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 13:19:02,366 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 13:19:02,751 DEBUG   SenderThread:5868 [sender.py:send():375] send: run
+2025-08-13 13:19:03,911 INFO    SenderThread:5868 [dir_watcher.py:__init__():219] watching files in: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files
+2025-08-13 13:19:03,912 INFO    SenderThread:5868 [sender.py:_start_run_threads():1124] run started: z7t59lgp with start time 1755062327.231778
+2025-08-13 13:19:03,912 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: summary_record
+2025-08-13 13:19:03,912 INFO    SenderThread:5868 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2025-08-13 13:19:03,914 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: check_version
+2025-08-13 13:19:03,914 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: check_version
+2025-08-13 13:19:04,739 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: run_start
+2025-08-13 13:19:04,918 INFO    Thread-16 :5868 [dir_watcher.py:_on_file_created():278] file/dir created: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\wandb-summary.json
+2025-08-13 13:19:05,548 DEBUG   HandlerThread:5868 [system_info.py:__init__():31] System info init
+2025-08-13 13:19:05,548 DEBUG   HandlerThread:5868 [system_info.py:__init__():46] System info init done
+2025-08-13 13:19:05,548 INFO    HandlerThread:5868 [system_monitor.py:start():181] Starting system monitor
+2025-08-13 13:19:05,548 INFO    SystemMonitor:5868 [system_monitor.py:_start():145] Starting system asset monitoring threads
+2025-08-13 13:19:05,548 INFO    HandlerThread:5868 [system_monitor.py:probe():201] Collecting system info
+2025-08-13 13:19:05,554 INFO    SystemMonitor:5868 [interfaces.py:start():190] Started cpu monitoring
+2025-08-13 13:19:05,555 INFO    SystemMonitor:5868 [interfaces.py:start():190] Started disk monitoring
+2025-08-13 13:19:05,556 INFO    SystemMonitor:5868 [interfaces.py:start():190] Started gpu monitoring
+2025-08-13 13:19:05,564 INFO    SystemMonitor:5868 [interfaces.py:start():190] Started memory monitoring
+2025-08-13 13:19:05,577 INFO    SystemMonitor:5868 [interfaces.py:start():190] Started network monitoring
+2025-08-13 13:19:05,581 DEBUG   HandlerThread:5868 [system_info.py:probe():195] Probing system
+2025-08-13 13:19:05,582 DEBUG   HandlerThread:5868 [system_info.py:_probe_git():180] Probing git
+2025-08-13 13:19:07,610 ERROR   gpu       :5868 [interfaces.py:monitor():144] Failed to sample metric: Unknown Error
+2025-08-13 13:19:07,610 ERROR   gpu       :5868 [interfaces.py:monitor():144] Failed to sample metric: Unknown Error
+2025-08-13 13:19:10,071 ERROR   gpu       :5868 [interfaces.py:monitor():144] Failed to sample metric: Unknown Error
+2025-08-13 13:19:10,071 ERROR   gpu       :5868 [interfaces.py:monitor():144] Failed to sample metric: Unknown Error
+2025-08-13 13:19:10,941 WARNING FileStreamThread:5868 [file_stream.py:request_with_retry():670] requests_with_retry encountered retryable exception: HTTPSConnectionPool(host='api.wandb.ai', port=443): Max retries exceeded with url: /files/ucas-feng/behavioral-cloning/z7t59lgp/file_stream (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1017)'))). func: <bound method Session.post of <requests.sessions.Session object at 0x000002EA5D4937F0>>, args: ('https://api.wandb.ai/files/ucas-feng/behavioral-cloning/z7t59lgp/file_stream',), kwargs: {'json': {'files': {'wandb-summary.json': {'offset': 0, 'content': ['{}']}}, 'dropped': 0}}
+2025-08-13 13:19:12,534 ERROR   gpu       :5868 [interfaces.py:monitor():144] Failed to sample metric: Unknown Error
+2025-08-13 13:19:12,534 ERROR   gpu       :5868 [interfaces.py:monitor():144] Failed to sample metric: Unknown Error
+2025-08-13 13:19:15,002 ERROR   gpu       :5868 [interfaces.py:monitor():144] Failed to sample metric: Unknown Error
+2025-08-13 13:19:15,002 ERROR   gpu       :5868 [interfaces.py:monitor():144] Failed to sample metric: Unknown Error
+2025-08-13 13:19:16,672 DEBUG   HandlerThread:5868 [system_info.py:_probe_git():188] Probing git done
+2025-08-13 13:19:16,672 DEBUG   HandlerThread:5868 [system_info.py:probe():240] Probing system done
+2025-08-13 13:19:16,672 DEBUG   HandlerThread:5868 [system_monitor.py:probe():210] {'os': 'Windows-10-10.0.26100-SP0', 'python': '3.10.18', 'heartbeatAt': '2025-08-13T05:19:05.581039', 'startedAt': '2025-08-13T05:18:47.223425', 'docker': None, 'cuda': None, 'args': (), 'state': 'running', 'program': 'D:\\PycharmProjects\\MyReinFlow\\behavioral_cloning.py', 'codePath': 'behavioral_cloning.py', 'git': {'remote': None, 'commit': '6367b75c8ca70e3d8e44f77de9b3c1404b09e2de'}, 'email': '3229321281@qq.com', 'root': 'D:/PycharmProjects/MyReinFlow', 'host': 'feng', 'username': '32293', 'executable': 'C:\\Users\\32293\\.conda\\envs\\xuance\\python.exe', 'cpu_count': 16, 'cpu_count_logical': 24, 'cpu_freq': {'current': 2100.0, 'min': 0.0, 'max': 2100.0}, 'cpu_freq_per_core': [{'current': 2100.0, 'min': 0.0, 'max': 2100.0}], 'disk': {'total': 652.8701133728027, 'used': 15.20709228515625}, 'gpu': 'NVIDIA GeForce RTX 5060 Laptop GPU', 'gpu_count': 1, 'gpu_devices': [{'name': 'NVIDIA GeForce RTX 5060 Laptop GPU', 'memory_total': 8546942976}], 'memory': {'total': 15.726753234863281}}
+2025-08-13 13:19:16,672 INFO    HandlerThread:5868 [system_monitor.py:probe():211] Finished collecting system info
+2025-08-13 13:19:16,672 INFO    HandlerThread:5868 [system_monitor.py:probe():214] Publishing system info
+2025-08-13 13:19:16,672 DEBUG   HandlerThread:5868 [system_info.py:_save_pip():51] Saving list of pip packages installed into the current environment
+2025-08-13 13:19:16,673 DEBUG   HandlerThread:5868 [system_info.py:_save_pip():67] Saving pip packages done
+2025-08-13 13:19:16,673 DEBUG   HandlerThread:5868 [system_info.py:_save_conda():74] Saving list of conda packages installed into the current environment
+2025-08-13 13:19:16,674 ERROR   HandlerThread:5868 [system_info.py:_save_conda():85] Error saving conda packages: [WinError 2] 系统找不到指定的文件。
+Traceback (most recent call last):
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\wandb\sdk\internal\system\system_info.py", line 81, in _save_conda
+    subprocess.call(
+  File "C:\Users\32293\.conda\envs\xuance\lib\subprocess.py", line 345, in call
+    with Popen(*popenargs, **kwargs) as p:
+  File "C:\Users\32293\.conda\envs\xuance\lib\subprocess.py", line 971, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\32293\.conda\envs\xuance\lib\subprocess.py", line 1456, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+FileNotFoundError: [WinError 2] 系统找不到指定的文件。
+2025-08-13 13:19:16,693 DEBUG   HandlerThread:5868 [system_info.py:_save_conda():86] Saving conda packages done
+2025-08-13 13:19:16,693 INFO    HandlerThread:5868 [system_monitor.py:probe():216] Finished publishing system info
+2025-08-13 13:19:16,739 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 13:19:16,739 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: keepalive
+2025-08-13 13:19:16,739 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 13:19:16,739 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: keepalive
+2025-08-13 13:19:16,740 DEBUG   SenderThread:5868 [sender.py:send():375] send: files
+2025-08-13 13:19:16,740 INFO    SenderThread:5868 [sender.py:_save_file():1378] saving file wandb-metadata.json with policy now
+2025-08-13 13:19:16,746 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: stop_status
+2025-08-13 13:19:16,746 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: stop_status
+2025-08-13 13:19:17,018 INFO    Thread-16 :5868 [dir_watcher.py:_on_file_created():278] file/dir created: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\requirements.txt
+2025-08-13 13:19:17,018 INFO    Thread-16 :5868 [dir_watcher.py:_on_file_created():278] file/dir created: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\wandb-metadata.json
+2025-08-13 13:19:17,019 INFO    Thread-16 :5868 [dir_watcher.py:_on_file_created():278] file/dir created: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\conda-environment.yaml
+2025-08-13 13:19:17,469 ERROR   gpu       :5868 [interfaces.py:monitor():144] Failed to sample metric: Unknown Error
+2025-08-13 13:19:17,469 ERROR   gpu       :5868 [interfaces.py:monitor():144] Failed to sample metric: Unknown Error
+2025-08-13 13:19:17,575 DEBUG   SenderThread:5868 [sender.py:send():375] send: telemetry
+2025-08-13 13:19:17,907 INFO    wandb-upload_0:5868 [upload_job.py:push():137] Uploaded file C:\Users\32293\AppData\Local\Temp\tmphssz077swandb\g3xot0jj-wandb-metadata.json
+2025-08-13 13:19:18,029 INFO    Thread-16 :5868 [dir_watcher.py:_on_file_created():278] file/dir created: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\output.log
+2025-08-13 13:19:18,592 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 13:19:19,041 INFO    Thread-16 :5868 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\config.yaml
+2025-08-13 13:19:20,055 INFO    Thread-16 :5868 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\output.log
+2025-08-13 13:19:24,016 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 13:19:25,086 DEBUG   SenderThread:5868 [sender.py:send():375] send: exit
+2025-08-13 13:19:25,087 INFO    SenderThread:5868 [sender.py:send_exit():598] handling exit code: 1
+2025-08-13 13:19:25,087 INFO    SenderThread:5868 [sender.py:send_exit():600] handling runtime: 20
+2025-08-13 13:19:25,088 INFO    SenderThread:5868 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2025-08-13 13:19:25,089 INFO    SenderThread:5868 [sender.py:send_exit():606] send defer
+2025-08-13 13:19:25,089 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: defer
+2025-08-13 13:19:25,089 INFO    HandlerThread:5868 [handler.py:handle_request_defer():170] handle defer: 0
+2025-08-13 13:19:25,089 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: defer
+2025-08-13 13:19:25,089 INFO    SenderThread:5868 [sender.py:send_request_defer():622] handle sender defer: 0
+2025-08-13 13:19:25,089 INFO    SenderThread:5868 [sender.py:transition_state():626] send defer: 1
+2025-08-13 13:19:25,089 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: defer
+2025-08-13 13:19:25,089 INFO    HandlerThread:5868 [handler.py:handle_request_defer():170] handle defer: 1
+2025-08-13 13:19:25,090 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: defer
+2025-08-13 13:19:25,090 INFO    SenderThread:5868 [sender.py:send_request_defer():622] handle sender defer: 1
+2025-08-13 13:19:25,090 INFO    SenderThread:5868 [sender.py:transition_state():626] send defer: 2
+2025-08-13 13:19:25,090 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: defer
+2025-08-13 13:19:25,090 INFO    HandlerThread:5868 [handler.py:handle_request_defer():170] handle defer: 2
+2025-08-13 13:19:25,090 INFO    HandlerThread:5868 [system_monitor.py:finish():190] Stopping system monitor
+2025-08-13 13:19:25,090 DEBUG   SystemMonitor:5868 [system_monitor.py:_start():159] Starting system metrics aggregation loop
+2025-08-13 13:19:25,090 DEBUG   SystemMonitor:5868 [system_monitor.py:_start():166] Finished system metrics aggregation loop
+2025-08-13 13:19:25,090 DEBUG   SystemMonitor:5868 [system_monitor.py:_start():170] Publishing last batch of metrics
+2025-08-13 13:19:25,091 INFO    HandlerThread:5868 [interfaces.py:finish():202] Joined cpu monitor
+2025-08-13 13:19:25,091 INFO    HandlerThread:5868 [interfaces.py:finish():202] Joined disk monitor
+2025-08-13 13:19:25,100 INFO    Thread-16 :5868 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\wandb-summary.json
+2025-08-13 13:19:25,131 INFO    HandlerThread:5868 [interfaces.py:finish():202] Joined gpu monitor
+2025-08-13 13:19:25,132 INFO    HandlerThread:5868 [interfaces.py:finish():202] Joined memory monitor
+2025-08-13 13:19:25,132 INFO    HandlerThread:5868 [interfaces.py:finish():202] Joined network monitor
+2025-08-13 13:19:25,132 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: defer
+2025-08-13 13:19:25,132 INFO    SenderThread:5868 [sender.py:send_request_defer():622] handle sender defer: 2
+2025-08-13 13:19:25,132 INFO    SenderThread:5868 [sender.py:transition_state():626] send defer: 3
+2025-08-13 13:19:25,132 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: defer
+2025-08-13 13:19:25,132 INFO    HandlerThread:5868 [handler.py:handle_request_defer():170] handle defer: 3
+2025-08-13 13:19:25,132 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: defer
+2025-08-13 13:19:25,133 INFO    SenderThread:5868 [sender.py:send_request_defer():622] handle sender defer: 3
+2025-08-13 13:19:25,133 INFO    SenderThread:5868 [sender.py:transition_state():626] send defer: 4
+2025-08-13 13:19:25,133 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: defer
+2025-08-13 13:19:25,133 INFO    HandlerThread:5868 [handler.py:handle_request_defer():170] handle defer: 4
+2025-08-13 13:19:25,133 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: defer
+2025-08-13 13:19:25,133 INFO    SenderThread:5868 [sender.py:send_request_defer():622] handle sender defer: 4
+2025-08-13 13:19:25,133 INFO    SenderThread:5868 [sender.py:transition_state():626] send defer: 5
+2025-08-13 13:19:25,133 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: defer
+2025-08-13 13:19:25,133 INFO    HandlerThread:5868 [handler.py:handle_request_defer():170] handle defer: 5
+2025-08-13 13:19:25,133 DEBUG   SenderThread:5868 [sender.py:send():375] send: summary
+2025-08-13 13:19:25,134 INFO    SenderThread:5868 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2025-08-13 13:19:25,134 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: defer
+2025-08-13 13:19:25,134 INFO    SenderThread:5868 [sender.py:send_request_defer():622] handle sender defer: 5
+2025-08-13 13:19:25,134 INFO    SenderThread:5868 [sender.py:transition_state():626] send defer: 6
+2025-08-13 13:19:25,134 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: defer
+2025-08-13 13:19:25,134 INFO    HandlerThread:5868 [handler.py:handle_request_defer():170] handle defer: 6
+2025-08-13 13:19:25,135 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: defer
+2025-08-13 13:19:25,135 INFO    SenderThread:5868 [sender.py:send_request_defer():622] handle sender defer: 6
+2025-08-13 13:19:25,135 INFO    SenderThread:5868 [sender.py:transition_state():626] send defer: 7
+2025-08-13 13:19:25,135 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 13:19:25,135 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: defer
+2025-08-13 13:19:25,135 INFO    HandlerThread:5868 [handler.py:handle_request_defer():170] handle defer: 7
+2025-08-13 13:19:25,135 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: defer
+2025-08-13 13:19:25,135 INFO    SenderThread:5868 [sender.py:send_request_defer():622] handle sender defer: 7
+2025-08-13 13:19:26,094 INFO    SenderThread:5868 [sender.py:transition_state():626] send defer: 8
+2025-08-13 13:19:26,094 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: defer
+2025-08-13 13:19:26,094 INFO    HandlerThread:5868 [handler.py:handle_request_defer():170] handle defer: 8
+2025-08-13 13:19:26,094 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: defer
+2025-08-13 13:19:26,094 INFO    SenderThread:5868 [sender.py:send_request_defer():622] handle sender defer: 8
+2025-08-13 13:19:26,094 INFO    SenderThread:5868 [sender.py:transition_state():626] send defer: 9
+2025-08-13 13:19:26,095 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: defer
+2025-08-13 13:19:26,095 INFO    HandlerThread:5868 [handler.py:handle_request_defer():170] handle defer: 9
+2025-08-13 13:19:26,095 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: defer
+2025-08-13 13:19:26,095 INFO    SenderThread:5868 [sender.py:send_request_defer():622] handle sender defer: 9
+2025-08-13 13:19:26,095 INFO    SenderThread:5868 [dir_watcher.py:finish():365] shutting down directory watcher
+2025-08-13 13:19:26,105 INFO    SenderThread:5868 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\output.log
+2025-08-13 13:19:26,105 INFO    SenderThread:5868 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\wandb-summary.json
+2025-08-13 13:19:26,105 INFO    SenderThread:5868 [dir_watcher.py:finish():395] scan: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files
+2025-08-13 13:19:26,106 INFO    SenderThread:5868 [dir_watcher.py:finish():409] scan save: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\conda-environment.yaml conda-environment.yaml
+2025-08-13 13:19:26,106 INFO    SenderThread:5868 [dir_watcher.py:finish():409] scan save: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\config.yaml config.yaml
+2025-08-13 13:19:26,106 INFO    SenderThread:5868 [dir_watcher.py:finish():409] scan save: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\output.log output.log
+2025-08-13 13:19:26,108 INFO    SenderThread:5868 [dir_watcher.py:finish():409] scan save: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\requirements.txt requirements.txt
+2025-08-13 13:19:26,108 INFO    SenderThread:5868 [dir_watcher.py:finish():409] scan save: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\wandb-metadata.json wandb-metadata.json
+2025-08-13 13:19:26,108 INFO    SenderThread:5868 [dir_watcher.py:finish():409] scan save: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\wandb-summary.json wandb-summary.json
+2025-08-13 13:19:26,109 INFO    SenderThread:5868 [sender.py:transition_state():626] send defer: 10
+2025-08-13 13:19:26,112 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: defer
+2025-08-13 13:19:26,112 INFO    HandlerThread:5868 [handler.py:handle_request_defer():170] handle defer: 10
+2025-08-13 13:19:26,113 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: defer
+2025-08-13 13:19:26,113 INFO    SenderThread:5868 [sender.py:send_request_defer():622] handle sender defer: 10
+2025-08-13 13:19:26,113 INFO    SenderThread:5868 [file_pusher.py:finish():167] shutting down file pusher
+2025-08-13 13:19:26,120 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: poll_exit
+2025-08-13 13:19:26,120 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: poll_exit
+2025-08-13 13:19:26,983 INFO    wandb-upload_1:5868 [upload_job.py:push():137] Uploaded file D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\output.log
+2025-08-13 13:19:27,131 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: poll_exit
+2025-08-13 13:19:27,131 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: poll_exit
+2025-08-13 13:19:27,381 INFO    wandb-upload_0:5868 [upload_job.py:push():137] Uploaded file D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\config.yaml
+2025-08-13 13:19:27,811 INFO    wandb-upload_3:5868 [upload_job.py:push():137] Uploaded file D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\wandb-summary.json
+2025-08-13 13:19:28,143 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: poll_exit
+2025-08-13 13:19:28,143 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: poll_exit
+2025-08-13 13:19:28,518 INFO    wandb-upload_2:5868 [upload_job.py:push():137] Uploaded file D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\files\requirements.txt
+2025-08-13 13:19:28,730 INFO    Thread-15 (_thread_body):5868 [sender.py:transition_state():626] send defer: 11
+2025-08-13 13:19:28,730 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: defer
+2025-08-13 13:19:28,730 INFO    HandlerThread:5868 [handler.py:handle_request_defer():170] handle defer: 11
+2025-08-13 13:19:28,730 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: defer
+2025-08-13 13:19:28,730 INFO    SenderThread:5868 [sender.py:send_request_defer():622] handle sender defer: 11
+2025-08-13 13:19:28,730 INFO    SenderThread:5868 [file_pusher.py:join():172] waiting for file pusher
+2025-08-13 13:19:28,730 INFO    SenderThread:5868 [sender.py:transition_state():626] send defer: 12
+2025-08-13 13:19:28,730 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: defer
+2025-08-13 13:19:28,731 INFO    HandlerThread:5868 [handler.py:handle_request_defer():170] handle defer: 12
+2025-08-13 13:19:28,731 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: defer
+2025-08-13 13:19:28,731 INFO    SenderThread:5868 [sender.py:send_request_defer():622] handle sender defer: 12
+2025-08-13 13:19:29,121 INFO    SenderThread:5868 [sender.py:transition_state():626] send defer: 13
+2025-08-13 13:19:29,121 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: defer
+2025-08-13 13:19:29,121 INFO    HandlerThread:5868 [handler.py:handle_request_defer():170] handle defer: 13
+2025-08-13 13:19:29,121 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: defer
+2025-08-13 13:19:29,121 INFO    SenderThread:5868 [sender.py:send_request_defer():622] handle sender defer: 13
+2025-08-13 13:19:29,121 INFO    SenderThread:5868 [sender.py:transition_state():626] send defer: 14
+2025-08-13 13:19:29,121 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: defer
+2025-08-13 13:19:29,122 INFO    HandlerThread:5868 [handler.py:handle_request_defer():170] handle defer: 14
+2025-08-13 13:19:29,122 DEBUG   SenderThread:5868 [sender.py:send():375] send: final
+2025-08-13 13:19:29,122 DEBUG   SenderThread:5868 [sender.py:send():375] send: footer
+2025-08-13 13:19:29,122 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: defer
+2025-08-13 13:19:29,122 INFO    SenderThread:5868 [sender.py:send_request_defer():622] handle sender defer: 14
+2025-08-13 13:19:29,122 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: poll_exit
+2025-08-13 13:19:29,123 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: poll_exit
+2025-08-13 13:19:29,123 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: server_info
+2025-08-13 13:19:29,123 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: poll_exit
+2025-08-13 13:19:29,123 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: get_summary
+2025-08-13 13:19:29,124 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: sampled_history
+2025-08-13 13:19:29,124 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: poll_exit
+2025-08-13 13:19:29,124 DEBUG   SenderThread:5868 [sender.py:send_request():402] send_request: server_info
+2025-08-13 13:19:29,818 INFO    MainThread:5868 [wandb_run.py:_footer_history_summary_info():3469] rendering history
+2025-08-13 13:19:29,818 INFO    MainThread:5868 [wandb_run.py:_footer_history_summary_info():3501] rendering summary
+2025-08-13 13:19:29,818 INFO    MainThread:5868 [wandb_run.py:_footer_sync_info():3428] logging synced files
+2025-08-13 13:19:29,819 DEBUG   HandlerThread:5868 [handler.py:handle_request():144] handle_request: shutdown
+2025-08-13 13:19:29,819 INFO    HandlerThread:5868 [handler.py:finish():842] shutting down handler
+2025-08-13 13:19:30,129 INFO    WriterThread:5868 [datastore.py:close():298] close: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_131847-z7t59lgp\run-z7t59lgp.wandb
+2025-08-13 13:19:30,829 INFO    SenderThread:5868 [sender.py:finish():1550] shutting down sender
+2025-08-13 13:19:30,829 INFO    SenderThread:5868 [file_pusher.py:finish():167] shutting down file pusher
+2025-08-13 13:19:30,829 INFO    SenderThread:5868 [file_pusher.py:join():172] waiting for file pusher

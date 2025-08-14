@@ -1,0 +1,152 @@
+2025-08-13 21:11:18,590 INFO    StreamThr :12980 [internal.py:wandb_internal():86] W&B internal server running at pid: 12980, started at: 2025-08-13 21:11:18.589209
+2025-08-13 21:11:18,592 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status
+2025-08-13 21:11:18,594 INFO    WriterThread:12980 [datastore.py:open_for_write():85] open: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\run-13hf2vcc.wandb
+2025-08-13 21:11:18,599 DEBUG   SenderThread:12980 [sender.py:send():375] send: header
+2025-08-13 21:11:20,155 DEBUG   SenderThread:12980 [sender.py:send():375] send: run
+2025-08-13 21:11:21,551 INFO    SenderThread:12980 [dir_watcher.py:__init__():219] watching files in: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files
+2025-08-13 21:11:21,558 INFO    SenderThread:12980 [sender.py:_start_run_threads():1124] run started: 13hf2vcc with start time 1755090678.592204
+2025-08-13 21:11:21,558 DEBUG   SenderThread:12980 [sender.py:send_request():402] send_request: summary_record
+2025-08-13 21:11:21,560 INFO    SenderThread:12980 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2025-08-13 21:11:21,561 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: check_version
+2025-08-13 21:11:21,562 DEBUG   SenderThread:12980 [sender.py:send_request():402] send_request: check_version
+2025-08-13 21:11:22,493 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: run_start
+2025-08-13 21:11:22,564 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_created():278] file/dir created: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\wandb-summary.json
+2025-08-13 21:11:24,979 DEBUG   HandlerThread:12980 [system_info.py:__init__():31] System info init
+2025-08-13 21:11:24,979 DEBUG   HandlerThread:12980 [system_info.py:__init__():46] System info init done
+2025-08-13 21:11:24,979 INFO    HandlerThread:12980 [system_monitor.py:start():181] Starting system monitor
+2025-08-13 21:11:24,980 INFO    SystemMonitor:12980 [system_monitor.py:_start():145] Starting system asset monitoring threads
+2025-08-13 21:11:24,980 INFO    HandlerThread:12980 [system_monitor.py:probe():201] Collecting system info
+2025-08-13 21:11:24,988 INFO    SystemMonitor:12980 [interfaces.py:start():190] Started cpu monitoring
+2025-08-13 21:11:24,989 INFO    SystemMonitor:12980 [interfaces.py:start():190] Started disk monitoring
+2025-08-13 21:11:24,990 INFO    SystemMonitor:12980 [interfaces.py:start():190] Started gpu monitoring
+2025-08-13 21:11:25,007 INFO    SystemMonitor:12980 [interfaces.py:start():190] Started memory monitoring
+2025-08-13 21:11:25,074 INFO    SystemMonitor:12980 [interfaces.py:start():190] Started network monitoring
+2025-08-13 21:11:25,086 DEBUG   HandlerThread:12980 [system_info.py:probe():195] Probing system
+2025-08-13 21:11:25,093 DEBUG   HandlerThread:12980 [system_info.py:_probe_git():180] Probing git
+2025-08-13 21:11:27,130 ERROR   gpu       :12980 [interfaces.py:monitor():144] Failed to sample metric: Unknown Error
+2025-08-13 21:11:27,131 ERROR   gpu       :12980 [interfaces.py:monitor():144] Failed to sample metric: Unknown Error
+2025-08-13 21:11:27,839 DEBUG   HandlerThread:12980 [system_info.py:_probe_git():188] Probing git done
+2025-08-13 21:11:27,839 DEBUG   HandlerThread:12980 [system_info.py:probe():240] Probing system done
+2025-08-13 21:11:27,839 DEBUG   HandlerThread:12980 [system_monitor.py:probe():210] {'os': 'Windows-10-10.0.26100-SP0', 'python': '3.10.18', 'heartbeatAt': '2025-08-13T13:11:25.087141', 'startedAt': '2025-08-13T13:11:18.560687', 'docker': None, 'cuda': None, 'args': (), 'state': 'running', 'program': 'd:\\PycharmProjects\\MyReinFlow\\reflow\\ft_baselines\\fql_main.py', 'codePath': 'reflow\\ft_baselines\\fql_main.py', 'git': {'remote': None, 'commit': '6367b75c8ca70e3d8e44f77de9b3c1404b09e2de'}, 'email': '3229321281@qq.com', 'root': 'D:/PycharmProjects/MyReinFlow', 'host': 'feng', 'username': '32293', 'executable': 'C:\\Users\\32293\\.conda\\envs\\xuance\\python.exe', 'cpu_count': 16, 'cpu_count_logical': 24, 'cpu_freq': {'current': 2100.0, 'min': 0.0, 'max': 2100.0}, 'cpu_freq_per_core': [{'current': 2100.0, 'min': 0.0, 'max': 2100.0}], 'disk': {'total': 652.8701133728027, 'used': 15.209461212158203}, 'gpu': 'NVIDIA GeForce RTX 5060 Laptop GPU', 'gpu_count': 1, 'gpu_devices': [{'name': 'NVIDIA GeForce RTX 5060 Laptop GPU', 'memory_total': 8546942976}], 'memory': {'total': 15.726753234863281}}
+2025-08-13 21:11:27,839 INFO    HandlerThread:12980 [system_monitor.py:probe():211] Finished collecting system info
+2025-08-13 21:11:27,840 INFO    HandlerThread:12980 [system_monitor.py:probe():214] Publishing system info
+2025-08-13 21:11:27,840 DEBUG   HandlerThread:12980 [system_info.py:_save_pip():51] Saving list of pip packages installed into the current environment
+2025-08-13 21:11:27,841 DEBUG   HandlerThread:12980 [system_info.py:_save_pip():67] Saving pip packages done
+2025-08-13 21:11:27,841 DEBUG   HandlerThread:12980 [system_info.py:_save_conda():74] Saving list of conda packages installed into the current environment
+2025-08-13 21:11:27,843 ERROR   HandlerThread:12980 [system_info.py:_save_conda():85] Error saving conda packages: [WinError 2] 系统找不到指定的文件。
+Traceback (most recent call last):
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\wandb\sdk\internal\system\system_info.py", line 81, in _save_conda
+    subprocess.call(
+  File "C:\Users\32293\.conda\envs\xuance\lib\subprocess.py", line 345, in call
+    with Popen(*popenargs, **kwargs) as p:
+  File "C:\Users\32293\.conda\envs\xuance\lib\subprocess.py", line 971, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\32293\.conda\envs\xuance\lib\subprocess.py", line 1456, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+FileNotFoundError: [WinError 2] 系统找不到指定的文件。
+2025-08-13 21:11:27,844 DEBUG   HandlerThread:12980 [system_info.py:_save_conda():86] Saving conda packages done
+2025-08-13 21:11:27,845 INFO    HandlerThread:12980 [system_monitor.py:probe():216] Finished publishing system info
+2025-08-13 21:11:27,860 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:11:27,860 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: keepalive
+2025-08-13 21:11:27,860 DEBUG   SenderThread:12980 [sender.py:send():375] send: files
+2025-08-13 21:11:27,861 INFO    SenderThread:12980 [sender.py:_save_file():1378] saving file wandb-metadata.json with policy now
+2025-08-13 21:11:27,871 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: stop_status
+2025-08-13 21:11:27,871 DEBUG   SenderThread:12980 [sender.py:send_request():402] send_request: stop_status
+2025-08-13 21:11:28,623 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_created():278] file/dir created: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\wandb-metadata.json
+2025-08-13 21:11:28,623 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_created():278] file/dir created: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\requirements.txt
+2025-08-13 21:11:28,624 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_created():278] file/dir created: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\conda-environment.yaml
+2025-08-13 21:11:29,214 INFO    wandb-upload_0:12980 [upload_job.py:push():137] Uploaded file C:\Users\32293\AppData\Local\Temp\tmp6mnmpt_7wandb\ws6x8vfn-wandb-metadata.json
+2025-08-13 21:11:29,615 ERROR   gpu       :12980 [interfaces.py:monitor():144] Failed to sample metric: Unknown Error
+2025-08-13 21:11:29,615 ERROR   gpu       :12980 [interfaces.py:monitor():144] Failed to sample metric: Unknown Error
+2025-08-13 21:11:29,721 DEBUG   SenderThread:12980 [sender.py:send():375] send: telemetry
+2025-08-13 21:11:29,722 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:11:30,644 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_created():278] file/dir created: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:11:32,106 ERROR   gpu       :12980 [interfaces.py:monitor():144] Failed to sample metric: Unknown Error
+2025-08-13 21:11:32,106 ERROR   gpu       :12980 [interfaces.py:monitor():144] Failed to sample metric: Unknown Error
+2025-08-13 21:11:32,668 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:11:34,599 ERROR   gpu       :12980 [interfaces.py:monitor():144] Failed to sample metric: Unknown Error
+2025-08-13 21:11:34,599 ERROR   gpu       :12980 [interfaces.py:monitor():144] Failed to sample metric: Unknown Error
+2025-08-13 21:11:34,785 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:11:40,053 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:11:40,750 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:11:41,765 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:11:42,869 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: stop_status
+2025-08-13 21:11:42,869 DEBUG   SenderThread:12980 [sender.py:send_request():402] send_request: stop_status
+2025-08-13 21:11:43,787 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:11:47,919 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: keepalive
+2025-08-13 21:11:50,339 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:11:51,874 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\config.yaml
+2025-08-13 21:11:53,889 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:11:55,911 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:11:56,313 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:11:57,872 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: stop_status
+2025-08-13 21:11:57,873 DEBUG   SenderThread:12980 [sender.py:send_request():402] send_request: stop_status
+2025-08-13 21:11:57,934 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:11:59,960 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:01,436 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:12:01,987 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:04,010 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:06,029 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:06,761 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:12:08,049 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:10,073 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:12,094 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:12,133 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:12:12,885 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: stop_status
+2025-08-13 21:12:12,886 DEBUG   SenderThread:12980 [sender.py:send_request():402] send_request: stop_status
+2025-08-13 21:12:14,115 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:16,137 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:17,391 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:12:18,155 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:20,180 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:22,232 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:23,215 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:12:23,242 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:25,085 DEBUG   SystemMonitor:12980 [system_monitor.py:_start():159] Starting system metrics aggregation loop
+2025-08-13 21:12:25,087 DEBUG   SenderThread:12980 [sender.py:send():375] send: stats
+2025-08-13 21:12:25,305 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:27,379 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:27,889 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: stop_status
+2025-08-13 21:12:27,889 DEBUG   SenderThread:12980 [sender.py:send_request():402] send_request: stop_status
+2025-08-13 21:12:29,410 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:31,155 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:12:33,522 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:35,574 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:36,334 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:12:37,594 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:39,633 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:41,597 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:12:41,675 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:42,903 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: stop_status
+2025-08-13 21:12:42,903 DEBUG   SenderThread:12980 [sender.py:send_request():402] send_request: stop_status
+2025-08-13 21:12:43,715 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:45,753 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:46,880 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:12:47,800 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:49,839 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:51,874 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:52,775 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:12:53,910 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:55,094 DEBUG   SenderThread:12980 [sender.py:send():375] send: stats
+2025-08-13 21:12:55,945 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:12:57,852 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:12:57,920 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: stop_status
+2025-08-13 21:12:57,920 DEBUG   SenderThread:12980 [sender.py:send_request():402] send_request: stop_status
+2025-08-13 21:12:57,982 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:13:00,066 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:13:02,103 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:13:03,021 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:13:04,138 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:13:06,176 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:13:08,060 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:13:08,197 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:13:10,253 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:13:12,285 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:13:12,934 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: stop_status
+2025-08-13 21:13:12,935 DEBUG   SenderThread:12980 [sender.py:send_request():402] send_request: stop_status
+2025-08-13 21:13:13,357 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:13:14,364 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:13:16,404 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:13:18,442 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log
+2025-08-13 21:13:19,187 DEBUG   HandlerThread:12980 [handler.py:handle_request():144] handle_request: status_report
+2025-08-13 21:13:19,488 INFO    Thread-16 :12980 [dir_watcher.py:_on_file_modified():295] file/dir modified: D:\PycharmProjects\MyReinFlow\wandb\run-20250813_211118-13hf2vcc\files\output.log

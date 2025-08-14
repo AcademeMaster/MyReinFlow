@@ -1,0 +1,30 @@
+
+加载 Minari 数据集: mujoco/pusher/expert-v0
+开始训练 FQL baseline...
+d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py:332: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  self.scaler = torch.cuda.amp.GradScaler(
+Epoch 1/20:   0%|                                                                     | 0/1934 [00:00<?, ?it/s]d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py:356: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=self.scaler.is_enabled()):
+d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py:374: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=self.scaler.is_enabled()):
+Epoch 1/20:   0%|                                                             | 1/1934 [00:00<31:39,  1.02it/s]
+Traceback (most recent call last):
+  File "d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py", line 550, in <module>
+    main()
+  File "d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py", line 540, in main
+    trainer.train()
+  File "d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py", line 361, in train
+    self.scaler.step(self.opt_critic)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\amp\grad_scaler.py", line 396, in step
+    raise RuntimeError(
+RuntimeError: step() has already been called since the last update().
+Traceback (most recent call last):
+  File "d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py", line 550, in <module>
+    main()
+  File "d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py", line 540, in main
+    trainer.train()
+  File "d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py", line 361, in train
+    self.scaler.step(self.opt_critic)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\amp\grad_scaler.py", line 396, in step
+    raise RuntimeError(
+RuntimeError: step() has already been called since the last update().

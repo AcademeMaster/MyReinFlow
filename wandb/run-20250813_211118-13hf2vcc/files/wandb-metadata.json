@@ -1,0 +1,50 @@
+{
+    "os": "Windows-10-10.0.26100-SP0",
+    "python": "3.10.18",
+    "heartbeatAt": "2025-08-13T13:11:25.087141",
+    "startedAt": "2025-08-13T13:11:18.560687",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "d:\\PycharmProjects\\MyReinFlow\\reflow\\ft_baselines\\fql_main.py",
+    "codePath": "reflow\\ft_baselines\\fql_main.py",
+    "git": {
+        "remote": null,
+        "commit": "6367b75c8ca70e3d8e44f77de9b3c1404b09e2de"
+    },
+    "email": "3229321281@qq.com",
+    "root": "D:/PycharmProjects/MyReinFlow",
+    "host": "feng",
+    "username": "32293",
+    "executable": "C:\\Users\\32293\\.conda\\envs\\xuance\\python.exe",
+    "cpu_count": 16,
+    "cpu_count_logical": 24,
+    "cpu_freq": {
+        "current": 2100.0,
+        "min": 0.0,
+        "max": 2100.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2100.0,
+            "min": 0.0,
+            "max": 2100.0
+        }
+    ],
+    "disk": {
+        "total": 652.8701133728027,
+        "used": 15.209461212158203
+    },
+    "gpu": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce RTX 5060 Laptop GPU",
+            "memory_total": 8546942976
+        }
+    ],
+    "memory": {
+        "total": 15.726753234863281
+    }
+}

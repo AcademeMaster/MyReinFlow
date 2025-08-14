@@ -1,0 +1,101 @@
+
+加载 Minari 数据集: mujoco/pusher/expert-v0
+开始训练 FQL baseline...
+d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py:332: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  self.scaler = torch.cuda.amp.GradScaler(
+Epoch 1/20:   0%|                                                                     | 0/1934 [00:00<?, ?it/s]d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py:356: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=self.scaler.is_enabled()):
+d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py:374: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=self.scaler.is_enabled()):
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Epoch 1/20:  13%|███████▋                                                   | 252/1934 [01:05<07:13,  3.88it/s]
+Traceback (most recent call last):
+  File "d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py", line 554, in <module>
+    main()
+  File "d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py", line 544, in main
+    trainer.train()
+  File "d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py", line 351, in train
+    for batch in tqdm(self.loader, desc=f"Epoch {epoch+1}/{self.cfg.num_epochs}"):
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\tqdm\std.py", line 1181, in __iter__
+    for obj in iterable:
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\utils\data\dataloader.py", line 733, in __next__
+    data = self._next_data()
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\utils\data\dataloader.py", line 789, in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\utils\data\_utils\fetch.py", line 52, in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\utils\data\_utils\fetch.py", line 52, in <listcomp>
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py", line 156, in __getitem__
+    ep = self.ds[ep_idx]  # type: ignore
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\minari\dataset\minari_dataset.py", line 298, in __getitem__
+    return next(episode)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\minari\dataset\_storages\hdf5_storage.py", line 145, in get_episodes
+    "actions": self._decode_space(
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\minari\dataset\_storages\hdf5_storage.py", line 127, in _decode_space
+    return hdf_ref[()]
+  File "h5py/_objects.pyx", line 56, in h5py._objects.with_phil.wrapper
+  File "h5py/_objects.pyx", line 57, in h5py._objects.with_phil.wrapper
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\h5py\_hl\dataset.py", line 820, in __getitem__
+    return self._fast_reader.read(args)
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py", line 554, in <module>
+    main()
+  File "d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py", line 544, in main
+    trainer.train()
+  File "d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py", line 351, in train
+    for batch in tqdm(self.loader, desc=f"Epoch {epoch+1}/{self.cfg.num_epochs}"):
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\tqdm\std.py", line 1181, in __iter__
+    for obj in iterable:
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\utils\data\dataloader.py", line 733, in __next__
+    data = self._next_data()
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\utils\data\dataloader.py", line 789, in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\utils\data\_utils\fetch.py", line 52, in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\torch\utils\data\_utils\fetch.py", line 52, in <listcomp>
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "d:\PycharmProjects\MyReinFlow\reflow\ft_baselines\fql_main.py", line 156, in __getitem__
+    ep = self.ds[ep_idx]  # type: ignore
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\minari\dataset\minari_dataset.py", line 298, in __getitem__
+    return next(episode)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\minari\dataset\_storages\hdf5_storage.py", line 145, in get_episodes
+    "actions": self._decode_space(
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\minari\dataset\_storages\hdf5_storage.py", line 127, in _decode_space
+    return hdf_ref[()]
+  File "h5py/_objects.pyx", line 56, in h5py._objects.with_phil.wrapper
+  File "h5py/_objects.pyx", line 57, in h5py._objects.with_phil.wrapper
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\h5py\_hl\dataset.py", line 820, in __getitem__
+    return self._fast_reader.read(args)
+KeyboardInterrupt
