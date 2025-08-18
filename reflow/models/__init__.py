@@ -9,17 +9,18 @@ This module contains probabilistic model implementations:
 """
 
 from .gaussian import GaussianModel
-from .gmm import GaussianMixtureModel
-from .mlp_gaussian import MLPGaussianModel
-from .mlp_gmm import MLPGMMModel
-from .critic import CriticObsAct, Critic
+from .gmm import GMMModel as GaussianMixtureModel
+from .mlp_gaussian import Gaussian_MLP, Gaussian_VisionMLP
+from .mlp_gmm import GMM_MLP
+from .critic import CriticObsAct, CriticObs as Critic
 
 __all__ = [
     # Probabilistic models
     "GaussianModel",
     "GaussianMixtureModel", 
-    "MLPGaussianModel",
-    "MLPGMMModel",
+    "Gaussian_MLP",
+    "Gaussian_VisionMLP",
+    "GMM_MLP",
     
     # RL models
     "CriticObsAct",

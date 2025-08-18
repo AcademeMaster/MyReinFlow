@@ -12,7 +12,6 @@ This module contains various neural network architectures used in the flow model
 from .mlp import MLP, ResidualMLP
 from .flow_mlp import FlowMLP
 from .embeddings import SinusoidalPosEmb
-from .modules import get_activation
 
 __all__ = [
     # Basic networks
@@ -24,5 +23,4 @@ __all__ = [
     "SinusoidalPosEmb",
     
     # Utilities
-    "get_activation"
 ]

@@ -33,6 +33,7 @@ from collections import namedtuple
 from typing import Tuple
 from torch.distributions.normal import Normal
 from reflow.networks.flow_mlp import FlowMLP
+from reflow.networks.noisy_flow_mlp import NoisyFlowMLP
 Sample = namedtuple("Sample", "trajectories chains")
 
 class PPOFlow(nn.Module):
@@ -204,7 +205,7 @@ class PPOFlow(nn.Module):
                      account_for_initial_stochasticity=False,
                      get_chains_stds=True
                      ):
-        '''
+        """
         inputs:
             x_chain: torch.Tensor of shape `[batchsize, self.inference_steps+1, self.horizon_steps, self.action_dim]`
            
@@ -217,14 +218,14 @@ class PPOFlow(nn.Module):
             p(x0|s)       = N(x0|0, 1)
             p(xt+1|xt, s) = N(xt+1 | xt + v(xt, s)1/K; sigma_t^2)
             
-            log p(xK|s) = log p(x0) + \sum_{t=0}^{K-1} log p(xt+1|xt, s)
-            H(X0:K)     = H(x0|s)     + \sum_{t=0}^{K-1} H(Xt+1|X_t, s)
+            log p(xK|s) = log p(x0) + sum_{t=0}^{K-1} log p(xt+1|xt, s)
+            H(X0:K)     = H(x0|s)     + sum_{t=0}^{K-1} H(Xt+1|X_t, s)
             entropy rate H(X) = H(X0:K)/(K+1) asymptotically converges to the entropy per symbol when K goes to infinity.
             we view the actions at each dimension and horizon as conditionally independent on the state s and previous action. (open-loop execution)
-        '''
+        """
         logprob = 0.0
-        joint_entropy=0.0 
-        entropy_rate_est=0.0
+        joint_entropy = 0.0 
+        entropy_rate_est = 0.0
         logprob_steps = 0
         
         B = x_chain.shape[0]
@@ -235,13 +236,14 @@ class PPOFlow(nn.Module):
         # initial probability
         init_dist = Normal(torch.zeros(B, self.horizon_steps* self.action_dim, device=self.device), 1.0)
         logprob_init = init_dist.log_prob(x_chain[:,0].reshape(B,-1)).sum(-1)   # [batchsize]
+        entropy_init = None
         if get_entropy:
             entropy_init = init_dist.entropy().sum(-1)                          # [batchsize]
         if account_for_initial_stochasticity:
-            logprob+=logprob_init
-            if get_entropy:
-                joint_entropy+=entropy_init
-            logprob_steps+=1
+            logprob += logprob_init
+            if get_entropy and entropy_init is not None:
+                joint_entropy += entropy_init
+            logprob_steps += 1
         
         # transition probabilities
         chains_vel  = torch.zeros_like(chains_prev, device=self.device)         # [batchsize, self.inference_steps, self.horizon_steps x self.action_dim]
@@ -254,7 +256,7 @@ class PPOFlow(nn.Module):
             vt, nt  =self.actor_ft.forward(xt, t, cond, True, i)                # [batchsize, self.horizon_steps, self.action_dim]
             chains_vel[:,i]  = vt.flatten(-2,-1)                                # [batchsize, self.horizon_steps x self.action_dim]
             chains_stds[:,i] = nt                                               # [batchsize, self.horizon_steps x self.action_dim]
-            logprob_steps+=1
+            logprob_steps += 1
         chains_mean = (chains_prev + chains_vel * dt)                           # [batchsize, self.inference_steps, self.horizon_steps x self.action_dim]
         if clip_intermediate_actions:
             chains_mean = chains_mean.clamp(-self.denoised_clip_value, self.denoised_clip_value)
@@ -264,6 +266,7 @@ class PPOFlow(nn.Module):
         
         # logprobability and entropy of the transitions
         logprob_trans = chains_dist.log_prob(chains_next).sum(-1)               # [batchsize, self.inference_steps] sum up self.horizon_steps x self.action_dim 
+        entropy_trans = None
         if get_entropy:
             entropy_trans = chains_dist.entropy().sum(-1)                       # [batchsize, self.inference_steps] Sum over all dimensions
         
@@ -272,8 +275,8 @@ class PPOFlow(nn.Module):
         if self.logprob_debug_recalculate: 
             log.info(f"logprob_init={logprob_init.mean().item()}, logprob_trans={logprob_trans.mean().item()}")
         # entropy rate estimate of the whole markov chain
-        if get_entropy:
-            joint_entropy +=entropy_trans.sum(-1)
+        if get_entropy and entropy_trans is not None:
+            joint_entropy += entropy_trans.sum(-1)
         
         if get_entropy:
             entropy_rate_est = joint_entropy/logprob_steps
@@ -285,13 +288,13 @@ class PPOFlow(nn.Module):
             if get_entropy:
                 entropy_rate_est = entropy_rate_est/self.act_dim_total
         
-        if verbose_entropy_stats and get_entropy:
-            log.info(f"entropy_rate_est={entropy_rate_est.shape} Entropy Percentiles: 10%={entropy_rate_est.quantile(0.1):.2f}, 50%={entropy_rate_est.median():.2f}, 90%={entropy_rate_est.quantile(0.9):.2f}")
+        if verbose_entropy_stats and get_entropy and isinstance(entropy_rate_est, torch.Tensor):
+            log.info(f"entropy_rate_est shape={entropy_rate_est.shape} Entropy Percentiles: 10%={entropy_rate_est.quantile(0.1):.2f}, 50%={entropy_rate_est.median():.2f}, 90%={entropy_rate_est.quantile(0.9):.2f}")
         
         if get_entropy:
             if get_chains_stds:
                 return logprob, entropy_rate_est, chains_stds.mean()
-            return logprob, entropy_rate_est, 
+            return logprob, entropy_rate_est
         else:
             if get_chains_stds:
                 return logprob, chains_stds.mean()
@@ -308,7 +311,7 @@ class PPOFlow(nn.Module):
                     account_for_initial_stochasticity=True,
                     ret_logprob=True
                     ):
-        '''
+        """
         inputs:
             cond: dict, contatinin...
                 'state': obs. observation in robotics. torch.Tensor(batchsize, cond_steps, obs_dim)
@@ -323,29 +326,33 @@ class PPOFlow(nn.Module):
             xt. tensor of shape `[batchsize, self.horizon_steps, self.action_dim]`
             x_chains. tensor of shape `[self.inference_steps +1 ,self.data_shape]`: x0, x1, x2, ... xK
             logprob. tensor of shape `[batchsize]` or None
-        '''
+        """
         # when doing deterministic sampling should calculate logprob again.
         B=cond["state"].shape[0]
         dt = (1/self.inference_steps)* torch.ones(B, self.horizon_steps, self.action_dim, device=self.device)
         steps = torch.linspace(0,1,self.inference_steps).repeat(B, 1).to(self.device)  # [batchsize, num_steps]
+        
+        x_chain = None
         if save_chains:
             x_chain=torch.zeros((B, self.inference_steps+1, self.horizon_steps, self.action_dim), device=self.device)
+            
+        log_prob = torch.zeros(B, device=self.device)
+        log_prob_steps = 0
+        log_prob_list = []
         if ret_logprob:
-            log_prob=0.0 
-            log_prob_steps=0
             if self.logprob_debug_sample: 
                 log_prob_list = []
         
         # sample first point
         xt, log_prob_init = self.sample_first_point(B)
         if ret_logprob and account_for_initial_stochasticity:
-            log_prob+=log_prob_init
-            log_prob_steps+=1
+            log_prob += log_prob_init
+            log_prob_steps += 1
             if self.logprob_debug_sample:
                 log_prob_list.append(log_prob_init.mean().item())
         
         xt:torch.Tensor
-        if save_chains:
+        if save_chains and x_chain is not None:
             x_chain[:, 0] = xt
         
         for i in range(self.inference_steps):
@@ -372,18 +379,19 @@ class PPOFlow(nn.Module):
                 if self.logprob_debug_sample: 
                     log_prob_list.append(logprob_transition.mean().item())
                 log_prob += logprob_transition
-                log_prob_steps+=1
-            if save_chains:
+                log_prob_steps += 1
+            if save_chains and x_chain is not None:
                 x_chain[:, i+1] = xt
         
         if ret_logprob:
             if normalize_denoising_horizon:
-                log_prob = log_prob/log_prob_steps
+                log_prob = log_prob / log_prob_steps
             if normalize_act_space_dimension:
-                log_prob = log_prob/self.act_dim_total
+                log_prob = log_prob / self.act_dim_total
             if self.logprob_debug_sample:
-                transform_logprob=torch.log(1-torch.tanh(x_chain[-1])**2+1e-7).sum(dim=(-2,-1)).mean().item()
-                print(f"log_prob_list={log_prob_list}, transform={transform_logprob}")
+                if x_chain is not None:
+                    transform_logprob=torch.log(1-torch.tanh(x_chain[:,-1])**2+1e-7).sum(dim=(-2,-1)).mean().item()
+                    print(f"log_prob_list={log_prob_list}, transform={transform_logprob}")
         
         if ret_logprob:
             if save_chains:
@@ -427,14 +435,20 @@ class PPOFlow(nn.Module):
         Here, B = n_steps x n_envs
         """
         
-        newlogprobs, entropy, noise_std = self.get_logprobs(obs, 
-                                                            chains, 
-                                                            get_entropy=True, 
-                                                            normalize_denoising_horizon=normalize_denoising_horizon,
-                                                            normalize_act_space_dimension=normalize_act_space_dimension, 
-                                                            verbose_entropy_stats=verbose, 
-                                                            clip_intermediate_actions=clip_intermediate_actions,
-                                                            account_for_initial_stochasticity=account_for_initial_stochasticity)
+        result = self.get_logprobs(obs, 
+                                  chains, 
+                                  get_entropy=True, 
+                                  normalize_denoising_horizon=normalize_denoising_horizon,
+                                  normalize_act_space_dimension=normalize_act_space_dimension, 
+                                  verbose_entropy_stats=verbose, 
+                                  clip_intermediate_actions=clip_intermediate_actions,
+                                  account_for_initial_stochasticity=account_for_initial_stochasticity)
+        
+        if len(result) == 3:
+            newlogprobs, entropy, noise_std = result
+        else:
+            newlogprobs, entropy = result
+            noise_std = torch.tensor(0.0, device=self.device)
         if verbose:
             log.info(f"oldlogprobs.min={oldlogprobs.min():5.3f}, max={oldlogprobs.max():5.3f}, std of oldlogprobs={oldlogprobs.std():5.3f}")
             log.info(f"newlogprobs.min={newlogprobs.min():5.3f}, max={newlogprobs.max():5.3f}, std of newlogprobs={newlogprobs.std():5.3f}")
@@ -489,11 +503,16 @@ class PPOFlow(nn.Module):
                 log.info(f"Value/Reward alignment: MSE={mse.item():.3f}")
         
         # Entropy loss
-        entropy_loss = -entropy.mean()
+        if isinstance(entropy, torch.Tensor):
+            entropy_loss = -entropy.mean()
+        else:
+            entropy_loss = torch.tensor(0.0, device=self.device)
+        
         # Monitor policy entropy distribution
         if verbose:
             with torch.no_grad():
-                log.info(f"Entropy Percentiles: 10%={entropy.quantile(0.1):.2f}, 50%={entropy.median():.2f}, 90%={entropy.quantile(0.9):.2f}")
+                if isinstance(entropy, torch.Tensor):
+                    log.info(f"Entropy Percentiles: 10%={entropy.quantile(0.1):.2f}, 50%={entropy.median():.2f}, 90%={entropy.quantile(0.9):.2f}")
         
         # bc loss
         bc_loss = 0.0
@@ -501,8 +520,19 @@ class PPOFlow(nn.Module):
             if bc_loss_type=='W2':
                 # add wasserstein divergence loss via action supervision
                 z=torch.zeros((obs['state'].shape[0], self.horizon_steps, self.action_dim), device=self.device)
-                a_ω = self.actor_old.sample_action(cond=obs, inference_steps=self.inference_steps, clip_intermediate_actions=True, act_range=[self.act_min, self.act_max],z=z)
-                a_θ = self.actor_ft.policy.sample_action(cond=obs, inference_steps=self.inference_steps, clip_intermediate_actions=True, act_range=[self.act_min, self.act_max],z=z)
+                a_ω_result = self.actor_old.sample_action(cond=obs, inference_steps=self.inference_steps, clip_intermediate_actions=True, act_range=[self.act_min, self.act_max], z=z)
+                a_θ_result = self.actor_ft.policy.sample_action(cond=obs, inference_steps=self.inference_steps, clip_intermediate_actions=True, act_range=[self.act_min, self.act_max], z=z)
+                
+                # Handle tuple results from sample_action
+                if isinstance(a_ω_result, tuple):
+                    a_ω = a_ω_result[0]
+                else:
+                    a_ω = a_ω_result
+                if isinstance(a_θ_result, tuple):
+                    a_θ = a_θ_result[0]
+                else:
+                    a_θ = a_θ_result
+                    
                 bc_loss = F.mse_loss(a_ω.detach(), a_θ)
             else:
                 raise NotImplementedError

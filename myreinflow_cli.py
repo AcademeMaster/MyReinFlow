@@ -17,9 +17,10 @@ def import_modules():
     """动态导入训练模块"""
     try:
         from scripts.train_behavioral_cloning import main as bc_main
-        from scripts.train_fql import main as fql_main  
+        from scripts.train_fql import main as fql_main
+        from scripts.train_ppo_flow import main as ppo_main
         from examples.mean_flow_2d_example import main as meanflow_2d_main
-        return bc_main, fql_main, meanflow_2d_main
+        return bc_main, fql_main, ppo_main, meanflow_2d_main
     except ImportError as e:
         print(f"导入错误: {e}")
         print("请确保所有依赖都已正确安装")
@@ -61,6 +62,14 @@ def create_parser():
         description='训练Flow Q-Learning模型'
     )
     add_fql_args(fql_parser)
+    
+    # PPO Flow 子命令
+    ppo_parser = subparsers.add_parser(
+        'ppo',
+        help='训练PPO Flow模型',
+        description='使用PPO优化Flow策略的在线训练'
+    )
+    add_ppo_args(ppo_parser)
     
     # 2D MeanFlow示例子命令
     meanflow_parser = subparsers.add_parser(
@@ -136,6 +145,20 @@ def add_fql_args(parser):
                        help='目标Q值聚合方式')
 
 
+def add_ppo_args(parser):
+    """添加PPO Flow相关参数"""
+    parser.add_argument('--env', type=str, default='Pendulum-v1', help='Gymnasium环境ID')
+    parser.add_argument('--total_timesteps', type=int, default=50000, help='总采样步数')
+    parser.add_argument('--rollout_steps', type=int, default=2048, help='每次rollout步数')
+    parser.add_argument('--update_epochs', type=int, default=10, help='每次更新的epoch数')
+    parser.add_argument('--minibatch_size', type=int, default=256, help='小批量大小')
+    parser.add_argument('--seed', type=int, default=42, help='随机种子')
+    parser.add_argument('--inference_steps', type=int, default=32, help='流采样步数')
+    parser.add_argument('--horizon_steps', type=int, default=1, help='动作预测步数(通常为1)')
+    parser.add_argument('--cond_steps', type=int, default=1, help='条件观测步数')
+    parser.add_argument('--actor_policy_path', type=str, default=None, help='预训练Actor策略权重路径（可选）')
+
+
 def add_meanflow_2d_args(parser):
     """添加2D MeanFlow示例参数"""
     parser.add_argument('--epochs', type=int, default=10000,
@@ -162,13 +185,26 @@ def main():
     print("-" * 50)
     
     # 动态导入模块
-    bc_main, fql_main, meanflow_2d_main = import_modules()
+    bc_main, fql_main, ppo_main, meanflow_2d_main = import_modules()
     
     try:
         if args.command == 'bc':
             bc_main(args)
         elif args.command == 'fql':
             fql_main(args)
+        elif args.command == 'ppo':
+            ppo_main([
+                '--env', args.env,
+                '--total_timesteps', str(args.total_timesteps),
+                '--rollout_steps', str(args.rollout_steps),
+                '--update_epochs', str(args.update_epochs),
+                '--minibatch_size', str(args.minibatch_size),
+                '--seed', str(args.seed),
+                '--inference_steps', str(args.inference_steps),
+                '--horizon_steps', str(args.horizon_steps),
+                '--cond_steps', str(args.cond_steps),
+                *(["--actor_policy_path", args.actor_policy_path] if getattr(args, 'actor_policy_path', None) else []),
+            ])
         elif args.command == 'mean-flow-2d':
             meanflow_2d_main(args)
         else:
