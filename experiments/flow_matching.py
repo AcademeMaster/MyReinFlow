@@ -326,8 +326,8 @@ class FlowModelTrainer:
                 
                 # 流匹配
                 noise = torch.randn_like(actions, device=device)
-                flow_data = self.flow_matcher.sample_location_and_conditional_flow(noise, actions)
-                t, xt, ut = flow_data[:3]  # 解包前三个元素
+                t, xt, ut = self.flow_matcher.sample_location_and_conditional_flow(noise, actions,return_noise=False)
+
                 
                 # 使用最新的观测作为条件
                 obs_cond = observations[:, -1, :]  # [B, obs_dim]
@@ -423,6 +423,30 @@ class FlowModelTester:
     def __init__(self, config: Config, checkpoint_path=None, render_mode=None):
         self.config = config
         
+        # 确定检查点路径
+        if checkpoint_path is None:
+            # 如果没有指定检查点，尝试加载最新
+            checkpoints = [f for f in os.listdir(config.checkpoint_dir) if f.startswith("flow_ema_")]
+            if not checkpoints:
+                raise FileNotFoundError("未找到检查点文件")
+            checkpoints.sort(reverse=True)
+            checkpoint_path = os.path.join(config.checkpoint_dir, checkpoints[0])
+        
+        print(f"加载模型权重: {checkpoint_path}")
+        # 修复加载问题，添加weights_only=False参数
+        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
+        
+        # 从检查点中获取模型维度信息
+        obs_dim_from_ckpt = checkpoint["model_state"]["obs_embed.0.weight"].shape[1]
+        action_dim_from_ckpt = checkpoint["model_state"]["noise_embed.0.weight"].shape[1]
+        
+        print(f"从检查点加载的维度信息: obs_dim={obs_dim_from_ckpt}, action_dim={action_dim_from_ckpt}")
+        
+        # 更新配置中的action_dim
+        self.config.action_dim = action_dim_from_ckpt
+        self.obs_dim_from_ckpt = obs_dim_from_ckpt  # 保存检查点中的观测维度
+        self.action_dim_from_ckpt = action_dim_from_ckpt  # 保存检查点中的动作维度
+        
         # 加载数据集以恢复环境
         minari_dataset = minari.load_dataset(config.dataset_name)
         
@@ -463,24 +487,10 @@ class FlowModelTester:
         obs_shape = obs_space.shape if isinstance(obs_space, spaces.Box) else (1,)
         action_shape = act_space.shape if isinstance(act_space, spaces.Box) else (1,)
 
-        obs_dim = int(np.prod(obs_shape)) if obs_shape is not None else 1
-        action_dim = int(np.prod(action_shape)) if action_shape is not None else 1
-        self.config.action_dim = action_dim  # 确保配置中有action_dim
+        obs_dim_env = int(np.prod(obs_shape)) if obs_shape is not None else 1
+        action_dim_env = int(np.prod(action_shape)) if action_shape is not None else 1
         
-        # 创建模型并加载权重
-        self.model = TimeConditionedFlowModel(obs_dim, action_dim, config).to(device)
-        
-        if checkpoint_path is None:
-            # 如果没有指定检查点，尝试加载最新
-            checkpoints = [f for f in os.listdir(config.checkpoint_dir) if f.startswith("flow_ema_")]
-            if not checkpoints:
-                raise FileNotFoundError("未找到检查点文件")
-            checkpoints.sort(reverse=True)
-            checkpoint_path = os.path.join(config.checkpoint_dir, checkpoints[0])
-        
-        print(f"加载模型权重: {checkpoint_path}")
-        # 修复加载问题，添加weights_only=False参数
-        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
+        print(f"环境中的维度信息: obs_dim={obs_dim_env}, action_dim={action_dim_env}")
         
         # 检查检查点中的配置格式
         if "config" in checkpoint and isinstance(checkpoint["config"], dict):
@@ -490,9 +500,42 @@ class FlowModelTester:
                 if hasattr(self.config, key):
                     setattr(self.config, key, value)
         
+        # 创建模型并加载权重（使用检查点中的维度信息）
+        self.model = TimeConditionedFlowModel(obs_dim_from_ckpt, action_dim_from_ckpt, config).to(device)
+        
         self.model.load_state_dict(checkpoint["model_state"])
         self.stats = checkpoint.get("stats", None)
         self.model.eval()
+        
+        # 保存环境的动作维度
+        self.action_dim_env = action_dim_env
+        
+        # 如果环境维度与检查点维度不一致，禁用归一化
+        if obs_dim_env != obs_dim_from_ckpt or action_dim_env != action_dim_from_ckpt:
+            print("警告: 环境维度与检查点维度不一致，禁用数据归一化")
+            self.config.normalize_data = False
+            # 创建一个索引来选择与模型匹配的观测维度
+            if obs_dim_env > obs_dim_from_ckpt:
+                self.obs_indices = torch.arange(obs_dim_from_ckpt)
+                print(f"将从环境观测中选择前{obs_dim_from_ckpt}个维度")
+            else:
+                self.obs_indices = None
+                print("环境观测维度小于模型期望维度，这可能会导致错误")
+                
+            # 对于动作维度，如果环境需要更多维度，则填充0
+            if action_dim_env > action_dim_from_ckpt:
+                self.action_padding = action_dim_env - action_dim_from_ckpt
+                print(f"将为动作添加{self.action_padding}个零填充维度")
+            elif action_dim_env < action_dim_from_ckpt:
+                self.action_truncate = action_dim_from_ckpt - action_dim_env
+                print(f"将从动作中截取前{action_dim_env}个维度")
+            else:
+                self.action_padding = 0
+                self.action_truncate = 0
+        else:
+            self.obs_indices = None
+            self.action_padding = 0
+            self.action_truncate = 0
     
     def test(self):
         """测试模型在环境中的表现"""
@@ -512,11 +555,15 @@ class FlowModelTester:
             while not done and step_count < self.config.max_steps:
                 # 准备观测数据
                 obs_arr = np.array(obs_history)
-                if self.stats:
+                if self.stats and self.config.normalize_data:
                     obs_arr = self._normalize(obs_arr, self.stats["observations"])
                 
                 # 转换为张量
                 obs_tensor = torch.as_tensor(obs_arr[-1], device=device, dtype=torch.float32).unsqueeze(0)  # [1, obs_dim]
+                
+                # 如果需要，调整观测数据维度以匹配模型期望的维度
+                if self.obs_indices is not None:
+                    obs_tensor = torch.index_select(obs_tensor, 1, self.obs_indices.to(device))
                 
                 # 迭代求解器
                 noise = torch.randn(1, self.config.pred_horizon, self.config.action_dim).to(device)
@@ -530,7 +577,7 @@ class FlowModelTester:
                 action_seq = noise.squeeze(0).detach().cpu().numpy()
                 
                 # 反归一化
-                if self.stats:
+                if self.stats and self.config.normalize_data:
                     action_seq = self._denormalize(action_seq, self.stats["actions"])
                 
                 # 执行动作序列
@@ -539,6 +586,16 @@ class FlowModelTester:
                         break
                     
                     action = action_seq[i]
+                    
+                    # 如果需要，调整动作维度以匹配环境期望的维度
+                    if self.action_padding > 0:
+                        # 填充0以增加动作维度
+                        padded_action = np.pad(action, (0, self.action_padding), mode='constant')
+                        action = padded_action
+                    elif self.action_truncate > 0:
+                        # 截取动作以减少维度
+                        action = action[:self.action_dim_env]
+                    
                     next_obs, reward, terminated, truncated, _ = self.eval_env.step(action)
                     done = terminated or truncated
                     episode_reward += float(reward)  # 确保类型转换
@@ -586,7 +643,7 @@ def main():
     parser.add_argument("--checkpoint", help="测试时使用的模型路径")
     parser.add_argument("--test-episodes", type=int, default=20, help="测试轮数")
     parser.add_argument("--learning-rate", type=float, default=1e-4, help="学习率")
-    parser.add_argument("--normalize", action="store_true", default=None, help="启用数据归一化")
+    parser.add_argument("--normalize", action="store_true", default=True, help="启用数据归一化")
     parser.add_argument("--no-normalize", dest="normalize", action="store_false", help="禁用数据归一化")
     parser.add_argument("--render", choices=["none", "human", "rgb_array"], default="human", 
                        help="测试时的渲染模式 (默认: human)")
