@@ -1,3 +1,0 @@
-2025-08-18 14:36:42,858 - root - INFO - `eval_env` has been set to True but the dataset mujoco/pusher/expert-v0 doesn't provide an evaluation environment. Instead, the environment used for collecting the data will be returned: EnvSpec(id='Pusher-v5', entry_point='gymnasium.envs.mujoco.pusher_v5:PusherEnv', reward_threshold=0.0, nondeterministic=False, max_episode_steps=100, order_enforce=True, disable_env_checker=False, kwargs={}, namespace=None, name='Pusher', version=5, additional_wrappers=(), vector_entry_point=None)
-2025-08-18 14:36:48,149 - __main__ - INFO - Loaded 5000 episodes, total 505000 steps
-2025-08-18 14:36:48,149 - __main__ - INFO - Created 185000 samples

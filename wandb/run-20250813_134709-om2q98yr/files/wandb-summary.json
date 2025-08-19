@@ -1,1 +1,0 @@
-{"epoch": 30, "train/loss": 0.037274936214089394, "_timestamp": 1755064381.5432293, "_runtime": 352.37188744544983, "_step": 34, "eval/mean_return": -38.388292689895636, "eval/std_return": 6.3989677153870845, "eval/mean_length": 100.0, "eval/std_length": 0.0}

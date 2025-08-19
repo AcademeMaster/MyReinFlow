@@ -1,395 +1,128 @@
 # MyReinFlow
 
-一个包含 ReFlow/MeanFlow 流模型与行为克隆 (Behavioral Cloning, BC) 的研究与实验仓库，使用 PyTorch 实现，支持 WandB 实验追踪。本项目提供统一的CLI界面，便于管理不同的训练任务。
+基于流匹配(Flow Matching)的强化学习框架，用于机器人操作任务的动作生成。
 
-## 🚀 快速开始
-
-### 统一CLI使用方式
-
-```bash
-# 训练行为克隆模型
-python myreinflow_cli.py bc --dataset mujoco/pusher/expert-v0 --epochs 50
-
-# 训练FQL模型  
-python myreinflow_cli.py fql --dataset mujoco/pusher/expert-v0 --epochs 20
-
-# 运行2D MeanFlow示例
-python myreinflow_cli.py mean-flow-2d --epochs 10000
-
-# 显示帮助
-python myreinflow_cli.py --help
-python myreinflow_cli.py bc --help
-```
-
-### 直接运行脚本
-
-```bash
-# 直接运行训练脚本
-python scripts/train_behavioral_cloning.py --epochs 50
-python scripts/train_fql.py --epochs 20
-python examples/mean_flow_2d_example.py
-```
-
-## 📂 项目结构
+## 项目结构
 
 ```
 MyReinFlow/
-├── 📜 myreinflow_cli.py          # 统一CLI入口
-├── 📜 pyproject.toml             # 项目配置与依赖
-├── 📜 README.md                  # 项目文档
-│
-├── 📂 reflow/                    # 核心流模型实现
+├── action_head/                 # 动作头模块
 │   ├── __init__.py
-│   ├── reflow.py                 # ReFlow实现
-│   ├── meanflow.py               # MeanFlow实现  
-│   ├── mlp_flow.py               # MLP流网络
-│   ├── 📂 common/                # 通用组件
-│   │   ├── critic.py             # Critic网络
-│   │   ├── gaussian.py           # 高斯分布工具
-│   │   ├── mlp.py                # MLP网络
-│   │   └── ...                   # 其他通用模块
-│   └── 📂 ft_baselines/          # 微调基线方法
-│       ├── fql.py                # FQL实现
-│       └── utils.py              # 工具函数
-│
-├── 📂 scripts/                   # 训练脚本
-│   ├── train_behavioral_cloning.py  # 行为克隆训练
-│   └── train_fql.py              # FQL训练
-│
-├── 📂 examples/                  # 示例与演示
-│   ├── mean_flow_2d_example.py   # 2D MeanFlow可视化示例
-│   ├── flow.py                   # 流模型基础示例
-│   └── main.py                   # 其他示例
-│
-├── 📂 configs/                   # 配置文件
-│   └── default.yaml              # 默认配置
-│
-├── 📂 experiments/               # 实验输出
-│   └── (训练产生的模型文件)
-│
-└── 📂 wandb/                     # WandB日志 (自动生成)
+│   ├── action_encoder.py        # 动作编码器
+│   ├── cross_attention_dit.py   # 交叉注意力DiT模型
+│   └── flow_matching_action_head.py  # 流匹配动作头
+├── checkpoint_t/                # 模型检查点目录
+├── config.py                    # 配置管理
+├── dataset.py                   # 数据集处理
+├── flow_matching.py             # 流匹配模型定义
+├── meanflow.py                  # MeanFlow模型定义
+├── model.py                     # 核心模型定义
+├── trainer.py                   # 训练器
+├── tester.py                    # 测试器
+├── main.py                      # 程序入口
+└── pyproject.toml               # 项目配置
 ```
 
-## 目录
+## 功能特性
 
-- [环境与依赖](#环境与依赖)
-- [行为克隆 (Behavioral Cloning)](#行为克隆-behavioral-cloning)
-- [FQL训练](#fql训练)
-- [MeanFlow vs ReFlow](#meanflow-vs-reflow)
-- [配置管理](#配置管理)
+- 基于条件流匹配(Conditional Flow Matching)的动作生成模型
+- 支持Diffusion Transformer (DiT) 架构
+- 支持MeanFlow算法进行一步生成
+- 模块化设计，易于扩展和维护
+- 支持多种机器人环境（基于Minari数据集）
+- 可配置的训练和测试参数
+- 支持大批次训练以提高训练效率
 
-## 环境与依赖
+## 技术架构
 
-建议使用 Conda 环境：
+本项目采用模块化设计，主要包括以下几个核心组件：
 
-```bash
-conda activate your_env_name
-```
+1. **配置管理模块** ([config.py](file:///D:/PycharmProjects/MyReinFlow/config.py)) - 管理所有训练和测试相关的配置参数
+2. **数据集处理模块** ([dataset.py](file:///D:/PycharmProjects/MyReinFlow/dataset.py)) - 处理Minari数据集，生成训练所需的序列数据
+3. **流匹配模型模块** ([model.py](file:///D:/PycharmProjects/MyReinFlow/model.py)) - 定义标准的流匹配模型和代理
+4. **MeanFlow模型模块** ([meanflow.py](file:///D:/PycharmProjects/MyReinFlow/meanflow.py)) - 定义MeanFlow模型和代理，支持一步生成
+5. **训练器模块** ([trainer.py](file:///D:/PycharmProjects/MyReinFlow/trainer.py)) - 实现模型训练逻辑
+6. **测试器模块** ([tester.py](file:///D:/PycharmProjects/MyReinFlow/tester.py)) - 实现模型测试和评估逻辑
+7. **动作头模块** ([action_head/](file:///D:/PycharmProjects/MyReinFlow/action_head/)) - 包含高级动作生成组件
 
-如果需要 WandB：
-
-```bash
-conda install wandb -y
-# 首次使用需登录
-wandb login
-```
-
-其他 Python 依赖请参考 `pyproject.toml`。如需本地安装本项目（可选）：
+## 安装依赖
 
 ```bash
 pip install -e .
 ```
 
-## 行为克隆 (Behavioral Cloning)
-
-一个使用 PyTorch 实现的行为克隆训练器，支持连续与离散动作，支持 WandB 记录。已修复原始版本中的 tensor 维度不匹配问题，并改进了数据处理与评估逻辑。
-
-### 主要特性
-
-- ✅ 中文注释与结构化代码：使用类/函数模块化，易读易扩展
-- ✅ 集成 WandB（可选）：训练与评估指标可视化
-- ✅ 灵活配置：命令行参数与配置类
-- ✅ 本地数据集：默认使用 `mujoco/pusher/expert-v0`（Minari）
-- ✅ 连续/离散动作空间均支持
-- ✅ 评估流程完善：训练过程定期评估
-
-### 使用方法
+或者使用 poetry:
 
 ```bash
-# 使用CLI（推荐）
-python myreinflow_cli.py bc --dataset mujoco/pusher/expert-v0 --epochs 50
-
-# 直接运行脚本
-python scripts/train_behavioral_cloning.py --epochs 50
-
-# 禁用 WandB
-python myreinflow_cli.py bc --no_wandb --epochs 10
+poetry install
 ```
 
-### 命令行参数
+## 使用方法
 
-- `--dataset`: 数据集名称 (默认: mujoco/pusher/expert-v0)
-- `--epochs`: 训练轮数 (默认: 50)
-- `--batch_size`: 批大小 (默认: 256)
-- `--lr`: 学习率 (默认: 3e-4)
-- `--eval_freq`: 评估频率 (默认: 5)
-- `--seed`: 随机种子 (默认: 42)
-- `--no_wandb`: 禁用 WandB 记录
-
-## FQL训练
-
-Flow Q-Learning (FQL) 结合了流模型与强化学习的方法。
-
-### 使用方法
+### 训练模型
 
 ```bash
-# 使用CLI（推荐）
-python myreinflow_cli.py fql --dataset mujoco/pusher/expert-v0 --epochs 20
+# 基本训练命令
+python main.py train --dataset mujoco/pusher/expert-v0 --epochs 100
 
-# 直接运行脚本  
-python scripts/train_fql.py --epochs 20
+# 使用大批次大小加速训练（适用于有足够显存的情况）
+python main.py train --dataset mujoco/pusher/expert-v0 --epochs 100 --batch-size 4096
 
-# 仅优化行为克隆流模型
-python myreinflow_cli.py fql --only_optimize_bc_flow
+# 使用混合精度训练（需要支持的GPU）
+python main.py train --dataset mujoco/pusher/expert-v0 --epochs 100 --mixed-precision fp16
 ```
 
-### 主要参数
-
-- `--dataset`: 数据集名称
-- `--epochs`: 训练轮数 (默认: 20)
-- `--cond_steps`: 条件观测步数 (默认: 1)
-- `--horizon_steps`: 预测动作步数 (默认: 4)
-- `--lr_flow/--lr_actor/--lr_critic`: 各组件学习率
-- `--only_optimize_bc_flow`: 仅优化行为克隆流模型
-
-## MeanFlow vs ReFlow
-
-本项目实现了两种流模型：
-
-1. **ReFlow**：基于瞬时速度场的传统流模型
-2. **MeanFlow**：基于平均速度场的改进模型，支持一步生成
-
-### 核心区别
-
-**ReFlow（瞬时速度场）**
-
-- 学习瞬时速度场 `v(x_t, t)`
-- 训练目标：`v(x_t, t) = x_1 - x_0`
-- 多步采样：`x_{t+dt} = x_t + v(x_t, t) * dt`
-
-**MeanFlow（平均速度场）**
-
-- 学习平均速度场 `u(x_t, t, r)`，其中 `t >= r`
-- 训练目标：`u(x_t, t, r) = v(x_t, t) - (t-r) * ∂u/∂t`
-- 一步生成：`x_0 = x_1 - u(x_1, 1, 0)`
-
-### 2D可视化示例
+### 测试模型
 
 ```bash
-# 运行2D MeanFlow示例
-python myreinflow_cli.py mean-flow-2d --epochs 10000
+# 基本测试命令
+python main.py test --dataset mujoco/pusher/expert-v0 --checkpoint ./checkpoint_t/flow_ema_0100.pth
 
-# 或直接运行
-python examples/mean_flow_2d_example.py
+# 不显示渲染界面的测试
+python main.py test --dataset mujoco/pusher/expert-v0 --checkpoint ./checkpoint_t/flow_ema_0100.pth --render none
+
+# 指定测试轮数
+python main.py test --dataset mujoco/pusher/expert-v0 --checkpoint ./checkpoint_t/flow_ema_0100.pth --test-episodes 20
 ```
 
-## 配置管理
+## 参数说明
 
-项目使用YAML配置文件统一管理默认参数，位于 `configs/default.yaml`。你可以：
+### 训练参数
 
-1. 修改默认配置
-2. 创建自定义配置文件
-3. 通过命令行参数覆盖配置
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `--dataset` | `mujoco/humanoid/expert-v0` | Minari数据集名称 |
+| `--epochs` | `100` | 训练轮数 |
+| `--batch-size` | `128` | 批次大小 |
+| `--learning-rate` | `1e-4` | 学习率 |
+| `--mixed-precision` | `fp16` | 混合精度训练模式 |
+| `--gradient-accumulation-steps` | `1` | 梯度累积步数 |
 
-## WandB集成
+### 测试参数
 
-项目集成了WandB用于实验追踪，记录内容包括：
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `--checkpoint` | 无 | 测试时使用的模型路径 |
+| `--n-steps` | `1` | 采样步数，1表示一步生成，>1表示多步迭代生成 |
 
-- `train/loss`: 训练损失
-- `eval/mean_return`: 平均回报  
-- `eval/std_return`: 回报标准差
-- `eval/mean_length`: 平均轨迹长度
+## MeanFlow 算法说明
 
-## 故障排除
+MeanFlow 是一种改进的流匹配算法，它允许通过一步生成来获得最终的动作序列，而不是传统的迭代生成方法。这大大提高了推理速度，同时保持了生成质量。
 
-### 内存不足
+使用 MeanFlow 时，可以通过设置 `--n-steps 1` 参数来启用一步生成模式。
 
-```bash
-python myreinflow_cli.py bc --batch_size 64
-```
+## 性能优化建议
 
-### WandB相关问题
+在具有8GB显存的GPU上，可以将批次大小设置为4096以加快训练速度。对于推理阶段，使用一步生成（n_steps=1）可以获得最佳性能。
 
-```bash
-python myreinflow_cli.py bc --no_wandb
-```
+## 已知问题
 
-### 数据集未就绪
+1. 在某些环境下可能需要调整批次大小以适应显存限制
+2. 多步生成模式可能会导致推理时间较长
 
-确认 Minari 已安装并且本地存在对应数据集：
+## 未来改进方向
 
-```python
-import minari
-print(minari.list_local_datasets())
-```
-
-## 输出文件
-
-- 训练模型：保存在 `experiments/` 目录
-- WandB日志：自动保存在 `wandb/` 目录  
-- 可视化图片：保存在 `figures/` 目录（2D示例）
-
-## 参考
-
-- ReFlow：Rectified Flow 相关理论与方法
-- MeanFlow：平均速度场思想，与最优传输理论相关的改进方向
-
-如需帮助或反馈，欢迎提交 Issue/PR。
-
-### 训练过程（伪代码片段）
-
-ReFlow 训练：
-
-```python
-def generate_target(self, x1):
-	t = self.sample_time(batch_size=x1.shape[0])
-	x0 = torch.randn(x1.shape, device=self.device)
-	xt = self.generate_trajectory(x1, x0, t)  # xt = t*x1 + (1-t)*x0
-	v = x1 - x0  # 瞬时速度
-	return (xt, t), v
-
-def loss(self, xt, t, obs, v):
-	v_hat = self.network(xt, t, obs)
-	return F.mse_loss(input=v_hat, target=v)
-```
-
-MeanFlow 训练：
-
-```python
-def generate_target_mean(self, x1):
-	t, r = self.sample_time_pair(batch_size)  # t >= r
-	x0 = torch.randn(x1.shape, device=self.device)
-	zt = (1 - t) * x1 + t * x0
-	v = x0 - x1  # 瞬时速度
-	return (zt, t, r), v
-
-def loss_mean(self, zt, t, r, obs, v):
-	# 使用 JVP 计算速度场的时间导数
-	u, dudt = jvp(
-		func=self.network,
-		inputs=(zt, r, t),
-		v=(v, torch.zeros_like(r), torch.ones_like(t))
-	)
-	# 平均速度目标
-	u_tgt = v - (t - r) * dudt
-	predicted_velocity = self.network(zt, t, obs)
-	return F.mse_loss(predicted_velocity, u_tgt)
-```
-
-### 采样过程
-
-ReFlow（多步）：
-
-```python
-def sample(self, cond, inference_steps):
-	x_hat = torch.randn(data_shape, device=self.device)
-	dt = 1.0 / inference_steps
-	for i in range(inference_steps):
-		t = torch.linspace(0, 1, inference_steps)[i]
-		vt = self.network(x_hat, t, cond)
-		x_hat += vt * dt  # 前向积分
-	return x_hat
-```
-
-MeanFlow（一步或少步）：
-
-```python
-def sample_one_step(self, cond):
-	x_hat = torch.randn(data_shape, device=self.device)
-	t = torch.ones(batch_size, device=self.device)
-	velocity = self.network(x_hat, t, cond)
-	x_hat = x_hat - velocity  # 一步变换
-	return x_hat
-
-def sample_mean_flow(self, cond, inference_steps):
-	x_hat = torch.randn(data_shape, device=self.device)
-	dt = 1.0 / inference_steps
-	for i in range(inference_steps, 0, -1):
-		r = (i-1) * dt
-		t = i * dt
-		velocity = self.network(x_hat, t, cond)
-		x_hat = x_hat - velocity * dt  # 反向积分
-	return x_hat
-```
-
-### 实际应用优势
-
-ReFlow 优势
-- 理论简单，训练稳定
-- 适合追求高精度的场景
-- 可通过增加采样步数提升质量
-
-MeanFlow 优势
-- 一步生成，推理速度快
-- 少步采样即可达到较好效果
-- 计算高效，适合实时/资源受限应用
-
-### 使用建议
-
-选择 ReFlow 当：
-- 对生成质量要求极高，且不敏感于推理速度
-- 需要渐进式生成过程
-
-选择 MeanFlow 当：
-- 需要实时生成（如在线强化学习）
-- 计算资源有限，或需要低延迟
-
-### 代码使用示例
-
-ReFlow：
-
-```python
-reflow = ReFlow(network, device, ...)
-(xt, t), v = reflow.generate_target(x1)
-loss = reflow.loss(xt, t, obs, v)
-sample = reflow.sample(cond, inference_steps=50)
-```
-
-MeanFlow：
-
-```python
-meanflow = MeanFlow(network, device, ...)
-(zt, t, r), v = meanflow.generate_target_mean(x1)
-loss = meanflow.loss_mean(zt, t, r, obs, v)
-result = meanflow.sample_one_step(cond)
-sample = meanflow.sample_mean_flow(cond, inference_steps=4)
-```
-
-运行完整示例：
-
-```powershell
-python mean_flow_example.py
-```
-
-> 参见仓库中的 `reflow/` 目录（包含 `meanflow.py`, `reflow.py`, `mlp_flow.py` 等）以获取实现细节。
-
----
-
-## 项目结构速览
-
-关键文件/目录：
-
-- `behavioral_cloning.py`：行为克隆主脚本。
-- `mean_flow_example.py`：MeanFlow 示例脚本。
-- `reflow/`：核心流模型实现（MeanFlow、ReFlow、网络结构与公共模块）。
-- `pyproject.toml`：项目依赖与打包配置。
-- `wandb/`：若启用 WandB，运行日志与工件将出现在此处。
-
----
-
-## 参考
-
-- ReFlow：Rectified Flow 相关理论与方法。
-- MeanFlow：平均速度场思想，与最优传输理论相关的改进方向。
-
-如需帮助或反馈，欢迎提交 Issue/PR。
+1. 支持更多类型的流匹配算法
+2. 增加更多动作头架构选项
+3. 提供模型压缩和加速功能
+4. 增加可视化工具以更好地理解模型行为
