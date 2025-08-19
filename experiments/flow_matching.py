@@ -762,7 +762,7 @@ def main():
     # 解析命令行参数
     parser = argparse.ArgumentParser(description="基于流匹配的机器人操作训练")
     parser.add_argument("mode", choices=["train", "test"], help="运行模式: train或test")
-    parser.add_argument("--dataset", default="mujoco/pusher/expert-v0", help="Minari数据集名称")
+    parser.add_argument("--dataset", default="mujoco/ant/expert-v0", help="Minari数据集名称")
     parser.add_argument("--epochs", type=int, default=100, help="训练轮数")
     parser.add_argument("--batch-size", type=int, default=128, help="批量大小")
     parser.add_argument("--checkpoint", help="测试时使用的模型路径")
