@@ -32,6 +32,32 @@ class FeatureEmbedding(nn.Module):
         return self.net(x)
 
 
+class SequenceEncoder(nn.Module):
+    """编码观测序列的模块"""
+
+    def __init__(self, obs_dim: int, hidden_dim: int, num_layers: int = 2):
+        super().__init__()
+        self.obs_dim = obs_dim
+        self.hidden_dim = hidden_dim
+
+        layers = []
+        input_size = obs_dim
+        for _ in range(num_layers - 1):
+            layers.append(nn.Linear(input_size, hidden_dim))
+            layers.append(nn.ReLU())
+            input_size = hidden_dim
+        layers.append(nn.Linear(input_size, hidden_dim))
+
+        self.net = nn.Sequential(*layers)
+
+    def forward(self, x: Tensor) -> Tensor:
+        # x: [B, seq_len, obs_dim]
+        B, seq_len, _ = x.shape
+        x_flat = x.reshape(B * seq_len, -1)
+        encoded = self.net(x_flat)
+        return encoded.reshape(B, seq_len, -1)
+
+
 class TimeEmbedding(nn.Module):
     """sin/cos time embedding + MLP"""
 
@@ -58,17 +84,21 @@ class TimeEmbedding(nn.Module):
 
 # ========= Critic (Double Q over obs + action-chunk) =========
 class DoubleCriticObsAct(nn.Module):
-    def __init__(self, obs_dim: int, action_dim: int, hidden_dim: int, action_horizon: int):
+    def __init__(self, obs_dim: int, action_dim: int, hidden_dim: int, action_horizon: int, obs_horizon: int):
         super().__init__()
         self.obs_dim = obs_dim
         self.action_dim = action_dim
         self.action_horizon = action_horizon
+        self.obs_horizon = obs_horizon
         self.total_action_dim = action_dim * action_horizon
-        self.total_obs_dim = obs_dim
+        self.total_obs_dim = obs_dim * obs_horizon
+
+        # 序列编码器
+        self.obs_encoder = SequenceEncoder(obs_dim, hidden_dim)
 
         def make_net():
             return nn.Sequential(
-                nn.Linear(self.total_obs_dim + self.total_action_dim, hidden_dim),
+                nn.Linear(hidden_dim + self.total_action_dim, hidden_dim),
                 nn.ReLU(),
                 nn.Linear(hidden_dim, hidden_dim),
                 nn.ReLU(),
@@ -79,8 +109,8 @@ class DoubleCriticObsAct(nn.Module):
         self.q2 = make_net()
 
     def _prep(self, obs: Tensor, actions: Tensor) -> Tensor:
-        # obs: [B, obs_dim] - 最后一个时间步的观测
-        # actions: [B,H,A] or [B,H*A]
+        # obs: [B, obs_horizon, obs_dim] - 观测序列
+        # actions: [B, H, A] or [B, H*A]
         if actions.dim() == 3:
             act = actions.reshape(actions.shape[0], -1)
         elif actions.dim() == 2:
@@ -88,7 +118,12 @@ class DoubleCriticObsAct(nn.Module):
         else:
             raise ValueError(f"bad actions dim={actions.dim()}")
 
-        return torch.cat([obs, act], dim=-1)
+        # 编码观测序列
+        obs_encoded = self.obs_encoder(obs)  # [B, obs_horizon, hidden_dim]
+        # 使用最后一个时间步的编码
+        obs_last = obs_encoded[:, -1, :]  # [B, hidden_dim]
+
+        return torch.cat([obs_last, act], dim=-1)
 
     def forward(self, obs: Tensor, actions: Tensor) -> Tuple[Tensor, Tensor]:
         x = self._prep(obs, actions)
@@ -97,14 +132,18 @@ class DoubleCriticObsAct(nn.Module):
 
 # ========= Time-conditioned flow model (predicts velocity [B,H,A]) =========
 class MeanTimeCondFlow(nn.Module):
-    def __init__(self, obs_dim: int, action_dim: int, hidden_dim: int, time_dim: int, pred_horizon: int):
+    def __init__(self, obs_dim: int, action_dim: int, hidden_dim: int, time_dim: int,
+                 pred_horizon: int, obs_horizon: int):
         super().__init__()
         self.obs_dim, self.action_dim = obs_dim, action_dim
         self.pred_horizon = pred_horizon
+        self.obs_horizon = obs_horizon
+
         self.t_embed = TimeEmbedding(time_dim)
         self.r_embed = TimeEmbedding(time_dim)
-        self.obs_embed = FeatureEmbedding(obs_dim, hidden_dim)
+        self.obs_encoder = SequenceEncoder(obs_dim, hidden_dim)
         self.noise_embed = FeatureEmbedding(action_dim, hidden_dim)
+
         joint_in = hidden_dim + hidden_dim + time_dim + time_dim
         self.net = nn.Sequential(
             nn.Linear(joint_in, hidden_dim * 2),
@@ -120,7 +159,7 @@ class MeanTimeCondFlow(nn.Module):
         if z.dim() == 3: return z
         if z.dim() == 2 and z.shape[1] == self.pred_horizon * self.action_dim:
             return z.view(z.shape[0], self.pred_horizon, self.action_dim)
-        if z.dim() == 1:  # Added for single sample
+        if z.dim() == 1:
             return z.view(1, self.pred_horizon,
                           self.action_dim) if z.numel() == self.pred_horizon * self.action_dim else z.view(1, 1,
                                                                                                            self.action_dim)
@@ -137,7 +176,7 @@ class MeanTimeCondFlow(nn.Module):
         return t.view(-1)[:B]
 
     def forward(self, obs: Tensor, z: Tensor, r: Tensor, t: Tensor) -> Tensor:
-        # obs: [B, obs_dim] - 最后一个时间步的观测
+        # obs: [B, obs_horizon, obs_dim] - 观测序列
         z = self._norm_z(z)
         B, H, A = z.shape
         t = self._norm_time(t, B)
@@ -145,13 +184,18 @@ class MeanTimeCondFlow(nn.Module):
 
         te = self.t_embed(t)  # [B, Td]
         re = self.r_embed(r)  # [B, Td]
-        oe = self.obs_embed(obs)  # [B, Hd]
+
+        # 编码观测序列并使用最后一个时间步的编码
+        obs_encoded = self.obs_encoder(obs)  # [B, obs_horizon, hidden_dim]
+        obs_last = obs_encoded[:, -1, :]  # [B, hidden_dim]
+
         ne = self.noise_embed(z.reshape(B * H, A)).view(B, H, -1)  # [B,H,Hd]
 
         te = te.unsqueeze(1).repeat(1, H, 1)
         re = re.unsqueeze(1).repeat(1, H, 1)
-        oe = oe.unsqueeze(1).repeat(1, H, 1)
-        x = torch.cat([oe, ne, re, te], dim=-1)  # [B,H,*]
+        obs_last = obs_last.unsqueeze(1).repeat(1, H, 1)
+
+        x = torch.cat([obs_last, ne, re, te], dim=-1)  # [B,H,*]
         return self.net(x)  # [B,H,A]
 
 
@@ -163,7 +207,8 @@ class MeanFlowActor(nn.Module):
         self.pred_horizon = cfg.pred_horizon
         self.action_dim = action_dim
         self.obs_dim = obs_dim
-        self.model = MeanTimeCondFlow(obs_dim, action_dim, cfg.hidden_dim, cfg.time_dim, cfg.pred_horizon)
+        self.model = MeanTimeCondFlow(obs_dim, action_dim, cfg.hidden_dim, cfg.time_dim,
+                                      cfg.pred_horizon, cfg.obs_horizon)
         # 在Actor内部维护观测历史
         self.obs_history = deque(maxlen=cfg.obs_horizon)
         # 用零初始化观测历史
@@ -182,12 +227,12 @@ class MeanFlowActor(nn.Module):
         r = torch.rand(n, device=device) * t
         return t, r
 
-    def predict_action_chunk(self, obs_cond: Tensor, n_steps: int = 1) -> Tensor:
+    def predict_action_chunk(self, obs_seq: Tensor, n_steps: int = 1) -> Tensor:
         self.model.eval()
         device = next(self.parameters()).device
-        obs_cond = obs_cond.to(device)
-        x = torch.randn(obs_cond.size(0), self.pred_horizon, self.action_dim, device=device)
-        return self.sample_mean_flow(obs_cond, x, n_steps=n_steps)
+        obs_seq = obs_seq.to(device)
+        x = torch.randn(obs_seq.size(0), self.pred_horizon, self.action_dim, device=device)
+        return self.sample_mean_flow(obs_seq, x, n_steps=n_steps)
 
     def select_action(self, obs: Tensor, n_steps: int = 1) -> Tensor:
         """
@@ -213,17 +258,17 @@ class MeanFlowActor(nn.Module):
             # 对于多个样本，复制观测序列
             obs_sequence = obs_sequence.repeat(obs.shape[0], 1, 1)  # [B, obs_horizon, obs_dim]
 
-        # 取最后一个时间步的观测用于条件生成
-        obs_cond = obs_sequence[:, -1, :]  # [B, obs_dim]
-        x = torch.randn(obs.shape[0], self.pred_horizon, self.action_dim, device=device)
         # 返回第一个动作
-        action_chunk = self.sample_mean_flow(obs_cond, x, n_steps=n_steps)
+        action_chunk = self.sample_mean_flow(obs_sequence, n_steps=n_steps)
         return action_chunk[:, 0, :]
 
-    def sample_mean_flow(self, obs_cond: Tensor, x: Tensor, n_steps: int = 1) -> Tensor:
-        """使用改进的观测序列处理和时间步进的均值流采样"""
+    def sample_mean_flow(self, obs_seq: Tensor, x: Tensor = None, n_steps: int = 1) -> Tensor:
+        """使用观测序列进行均值流采样"""
         device = next(self.parameters()).device
-        obs_cond, x = obs_cond.to(device), x.to(device)
+        obs_seq = obs_seq.to(device)
+
+        if x is None:
+            x = torch.randn(obs_seq.size(0), self.pred_horizon, self.action_dim, device=device)
 
         n_steps = max(1, int(n_steps))
         dt = 1.0 / n_steps
@@ -231,12 +276,12 @@ class MeanFlowActor(nn.Module):
         for i in range(n_steps, 0, -1):
             r = torch.full((x.shape[0],), (i - 1) * dt, device=device)
             t = torch.full((x.shape[0],), i * dt, device=device)
-            v = self.model(obs_cond, x, r, t)
+            v = self.model(obs_seq, x, r, t)
             x = x - v * dt
 
         return torch.clamp(x, -1, 1)
 
-    def flow_bc_loss(self, obs_cond: Tensor, action_chunk: Tensor) -> Tensor:
+    def flow_bc_loss(self, obs_seq: Tensor, action_chunk: Tensor) -> Tensor:
         """MeanFlow 训练损失（JVP 版）"""
         device = next(self.parameters()).device
         noise = torch.randn_like(action_chunk)
@@ -244,22 +289,22 @@ class MeanFlowActor(nn.Module):
         z = (1 - t.view(-1, 1, 1)) * action_chunk + t.view(-1, 1, 1) * noise
         v = noise - action_chunk
 
-        obs_cond = obs_cond.requires_grad_(True)
+        obs_seq = obs_seq.requires_grad_(True)
         z = z.requires_grad_(True)
         r = r.requires_grad_(True)
         t = t.requires_grad_(True)
 
-        v_obs = torch.zeros_like(obs_cond)
+        v_obs = torch.zeros_like(obs_seq)
         v_z = v
         v_r = torch.zeros_like(r)
         v_t = torch.ones_like(t)
 
         u_pred, dudt = jvp(lambda *ins: self.model(*ins),
-                           (obs_cond, z, r, t),
+                           (obs_seq, z, r, t),
                            (v_obs, v_z, v_r, v_t),
                            create_graph=True)
 
-        delta = torch.clamp(t - r, min=1e-6).view(-1, 1, 1)  # Added epsilon for stability
+        delta = torch.clamp(t - r, min=1e-6).view(-1, 1, 1)
         u_tgt = (v - delta * dudt).detach()
         return F.mse_loss(u_pred, u_tgt)
 
@@ -272,7 +317,8 @@ class ConservativeMeanFQL(nn.Module):
         self.obs_dim = obs_dim
         self.action_dim = action_dim
         self.actor = MeanFlowActor(obs_dim, action_dim, cfg)
-        self.critic = DoubleCriticObsAct(obs_dim, action_dim, cfg.hidden_dim, cfg.pred_horizon)
+        self.critic = DoubleCriticObsAct(obs_dim, action_dim, cfg.hidden_dim,
+                                         cfg.pred_horizon, cfg.obs_horizon)
         self.target_critic = copy.deepcopy(self.critic)
         for p in self.target_critic.parameters():
             p.requires_grad = False
@@ -284,46 +330,49 @@ class ConservativeMeanFQL(nn.Module):
     def discounted_returns(self, rewards: Tensor, gamma: float) -> Tensor:
         """
         计算H步折扣回报（从t到t+H-1）
-        rewards: [B, H] 包含从t到t+H-1的奖励
+        rewards: [B, H, 1] 包含从t到t+H-1的奖励
         返回: [B] 每个序列的折扣回报
         """
-        # 确保gamma在有效范围内
         gamma = max(0.0, min(1.0, gamma))
-
-        B, H = rewards.shape
+        # print(f"**************************************************")
+        # print(f"rewards shape: {rewards.shape}, gamma: {gamma}")
+        B, H, rew_dim = rewards.shape
+        # 确保rewards是2D [B, H]
+        rewards_squeezed = rewards.squeeze(-1) if rew_dim == 1 else rewards.view(B, H)
         factors = (gamma ** torch.arange(H, device=rewards.device, dtype=rewards.dtype)).unsqueeze(0)
-        return torch.sum(rewards * factors, dim=1)  # [B]
+        return torch.sum(rewards_squeezed * factors, dim=1)  # [B]
 
-    def loss_critic(self, obs_cond: Tensor, actions: Tensor, next_obs_cond: Tensor,
+    def loss_critic(self, obs_seq: Tensor, actions: Tensor, next_obs_seq: Tensor,
                     rewards: Tensor, terminated: Tensor, gamma: float) -> Tuple[Tensor, Dict]:
         """
         Critic损失计算
-        obs_cond: [B, obs_dim] - 最后一个时间步的观测
+        obs_seq: [B, obs_horizon, obs_dim] - 观测序列
         actions: [B, H, A] - 动作序列
-        next_obs_cond: [B, obs_dim] - 下一个状态最后一个时间步的观测
-        rewards: [B, H] - 从t到t+H-1的奖励
+        next_obs_seq: [B, obs_horizon, obs_dim] - 下一个观测序列
+        rewards: [B, H, 1] - 从t到t+H-1的奖励
         terminated: [B, 1] - 终止标志
         gamma: 折扣因子
         """
-        B = obs_cond.shape[0]
+        B = obs_seq.shape[0]
         with torch.no_grad():
             # 使用目标网络计算下一状态的Q值
-            next_actions = self.actor.predict_action_chunk(next_obs_cond, n_steps=self.cfg.inference_steps)
-            next_q1, next_q2 = self.target_critic(next_obs_cond, next_actions)
+            next_actions = self.actor.predict_action_chunk(next_obs_seq, n_steps=self.cfg.inference_steps)
+            next_q1, next_q2 = self.target_critic(next_obs_seq, next_actions)
             next_q = torch.min(next_q1, next_q2).view(B)
 
             # 计算H步折扣回报（从t到t+H-1）
             h_step_returns = self.discounted_returns(rewards, gamma)  # [B]
 
             # 计算bootstrap项
-            term = terminated.view(-1).float()  # 终止标志
-            bootstrap = (1.0 - term) * (gamma ** self.cfg.pred_horizon) * next_q
+            done = terminated.view(-1).float()  # 终止标志 [B]
+  
+            future_value = (1.0 - done) * (gamma ** self.cfg.pred_horizon) * next_q
 
             # 正确的TD目标
-            target = h_step_returns + bootstrap  # [B]
+            target = h_step_returns + future_value  # [B]
 
         # 计算当前Q值
-        q1, q2 = self.critic(obs_cond, actions)  # [B,1]
+        q1, q2 = self.critic(obs_seq, actions)  # [B,1]
         q1, q2 = q1.view(B), q2.view(B)
 
         # TD损失
@@ -331,13 +380,12 @@ class ConservativeMeanFQL(nn.Module):
 
         # CQL正则项
         num_samples = self.cfg.cql_num_samples
-        rep_obs_cond = obs_cond.repeat_interleave(num_samples, dim=0)
-        noise = torch.randn(B * num_samples, self.cfg.pred_horizon, self.action_dim, device=obs_cond.device)
-        sampled_actions = self.actor.sample_mean_flow(rep_obs_cond, noise, n_steps=self.cfg.inference_steps)
+        rep_obs_seq = obs_seq.repeat_interleave(num_samples, dim=0)
+        noise = torch.randn(B * num_samples, self.cfg.pred_horizon, self.action_dim, device=obs_seq.device)
+        sampled_actions = self.actor.sample_mean_flow(rep_obs_seq, noise, n_steps=self.cfg.inference_steps)
 
         # 计算采样动作的Q值
-        rep_obs = obs_cond.repeat_interleave(num_samples, dim=0)
-        q1s, q2s = self.critic(rep_obs, sampled_actions)
+        q1s, q2s = self.critic(rep_obs_seq, sampled_actions)
         q1s = q1s.view(B, num_samples)
         q2s = q2s.view(B, num_samples)
 
@@ -349,16 +397,14 @@ class ConservativeMeanFQL(nn.Module):
 
         # 动态平衡TD loss和CQL loss
         if hasattr(self, '_td_loss_stats') and hasattr(self, '_cql_loss_stats'):
-            # 使用指数移动平均来跟踪损失统计
             self._td_loss_stats = 0.9 * self._td_loss_stats + 0.1 * td_loss.item()
             self._cql_loss_stats = 0.9 * self._cql_loss_stats + 0.1 * cql.item()
         else:
-            # 初始化损失统计
             self._td_loss_stats = td_loss.item()
             self._cql_loss_stats = cql.item()
 
         # 根据损失统计进行归一化
-        if self._cql_loss_stats > 1e-8:  # 避免除零
+        if self._cql_loss_stats > 1e-8:
             cql_scale = self._td_loss_stats / self._cql_loss_stats
             cql_normalized = cql * cql_scale
         else:
@@ -379,14 +425,14 @@ class ConservativeMeanFQL(nn.Module):
         )
         return total, info
 
-    def loss_actor(self, obs_cond: Tensor, action_batch: Tensor) -> Tuple[Tensor, Dict]:
+    def loss_actor(self, obs_seq: Tensor, action_batch: Tensor) -> Tuple[Tensor, Dict]:
         """Actor损失计算"""
         # 行为克隆损失
-        bc = self.actor.flow_bc_loss(obs_cond, action_batch)
+        bc = self.actor.flow_bc_loss(obs_seq, action_batch)
 
         # Q引导损失
-        actor_actions = self.actor.predict_action_chunk(obs_cond, n_steps=self.cfg.inference_steps)
-        q1, q2 = self.critic(obs_cond, actor_actions)
+        actor_actions = self.actor.predict_action_chunk(obs_seq, n_steps=self.cfg.inference_steps)
+        q1, q2 = self.critic(obs_seq, actor_actions)
         q = torch.min(q1, q2)
         q_loss = -q.mean()
 
@@ -421,21 +467,17 @@ class LitConservativeMeanFQL(L.LightningModule):
         # 初始化观测历史
         self.net.actor.reset_obs_history()
 
-    def forward(self, obs_cond: Tensor) -> Tensor:
+    def forward(self, obs_seq: Tensor) -> Tensor:
         """前向传播：预测动作"""
-        return self.net.actor.predict_action_chunk(obs_cond, n_steps=self.cfg.inference_steps)
+        return self.net.actor.predict_action_chunk(obs_seq, n_steps=self.cfg.inference_steps)
 
     def training_step(self, batch: Dict[str, Tensor], batch_idx: int):
         device = self.device
 
-        # 预处理数据：提取最后一个时间步的观测
-        obs = batch["observations"].float().to(device)  # [B, obs_horizon, obs_dim]
-        obs_cond = obs[:, -1, :]  # [B, obs_dim]
-
+        # 使用整个观测序列
+        obs_seq = batch["observations"].float().to(device)  # [B, obs_horizon, obs_dim]
         actions = batch["action_chunks"].float().to(device)  # [B, H, A]
-        next_obs = batch["next_observations"].float().to(device)  # [B, obs_horizon, obs_dim]
-        next_obs_cond = next_obs[:, -1, :]  # [B, obs_dim]
-
+        next_obs_seq = batch["next_observations"].float().to(device)  # [B, obs_horizon, obs_dim]
         rewards = batch["rewards"].float().to(device)  # [B, H]
         terminated = batch["terminations"].float().to(device)  # [B, 1]
 
@@ -445,7 +487,7 @@ class LitConservativeMeanFQL(L.LightningModule):
         # Critic step
         self.toggle_optimizer(opt_c)
         loss_c, info_c = self.net.loss_critic(
-            obs_cond, actions, next_obs_cond, rewards, terminated, self.cfg.gamma
+            obs_seq, actions, next_obs_seq, rewards, terminated, self.cfg.gamma
         )
         self.log("critic/loss", loss_c, on_step=True, prog_bar=True)
         for k, v in info_c.items():
@@ -460,7 +502,7 @@ class LitConservativeMeanFQL(L.LightningModule):
         # Actor step - 控制 actor 更新频率：仅每 N 个 batch 更新
         if (batch_idx % self.cfg.actor_update_freq) == 0:
             self.toggle_optimizer(opt_a)
-            loss_a, info_a = self.net.loss_actor(obs_cond, actions)
+            loss_a, info_a = self.net.loss_actor(obs_seq, actions)
             self.log("actor/loss", loss_a, on_step=True, prog_bar=True)
             for k, v in info_a.items():
                 self.log(f"actor/{k}", v, on_step=True)
@@ -476,21 +518,19 @@ class LitConservativeMeanFQL(L.LightningModule):
     def validation_step(self, batch: Dict[str, Tensor], batch_idx: int):
         device = self.device
 
-        # 预处理数据
-        obs = batch["observations"].float().to(device)
-        obs_cond = obs[:, -1, :]
+        # 使用整个观测序列
+        obs_seq = batch["observations"].float().to(device)
         actions = batch["action_chunks"].float().to(device)
-        next_obs = batch["next_observations"].float().to(device)
-        next_obs_cond = next_obs[:, -1, :]
+        next_obs_seq = batch["next_observations"].float().to(device)
         rewards = batch["rewards"].float().to(device)
         terminated = batch["terminations"].float().to(device)
 
         # 评估critic loss
-        val_loss, info = self.net.loss_critic(obs_cond, actions, next_obs_cond, rewards, terminated, self.cfg.gamma)
+        val_loss, info = self.net.loss_critic(obs_seq, actions, next_obs_seq, rewards, terminated, self.cfg.gamma)
         self.log("val/critic_loss", val_loss, on_step=False, on_epoch=True, prog_bar=True)
 
         # 评估actor loss
-        val_actor_loss, actor_info = self.net.loss_actor(obs_cond, actions)
+        val_actor_loss, actor_info = self.net.loss_actor(obs_seq, actions)
         self.log("val/actor_loss", val_actor_loss, on_step=False, on_epoch=True, prog_bar=True)
 
         # 记录其他指标
@@ -502,12 +542,11 @@ class LitConservativeMeanFQL(L.LightningModule):
         return val_loss
 
     def test_step(self, batch: Dict[str, Tensor], batch_idx: int):
-        obs = batch["observations"].float().to(self.device)
-        obs_cond = obs[:, -1, :]
-        predicted_actions = self(obs_cond)
+        obs_seq = batch["observations"].float().to(self.device)
+        predicted_actions = self(obs_seq)
         actual_actions = batch["action_chunks"].float().to(self.device)
         # 只比较第一个动作
-        action_mse = F.mse_loss(predicted_actions, actual_actions[:, 0, :])
+        action_mse = F.mse_loss(predicted_actions, actual_actions)
         self.log("test/action_mse", action_mse, on_step=False, on_epoch=True)
         return action_mse
 

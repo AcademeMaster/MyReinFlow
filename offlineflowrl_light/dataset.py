@@ -61,15 +61,14 @@ class SlidingWindowDataset(Dataset):
         # 提取奖励序列 [pred_horizon, 1]
         reward_seq = episode.rewards[start:start + self.config.pred_horizon].reshape(-1, 1)
         
-        # 提取终止标志序列 [pred_horizon, 1]
-        terminated_seq = episode.terminations[start:start + self.config.pred_horizon].reshape(-1, 1)
-        
+        # 只取动作序列最后一个时间步的终止标志 [1, 1]
+        terminated = episode.terminations[start + self.config.pred_horizon - 1] if \
+            start + self.config.pred_horizon - 1 < len(episode.terminations) else True
+
         # 计算有效长度
         valid_length = min(self.config.pred_horizon, len(episode.rewards) - start)
         
-        # 检查是否为末端
-        is_terminal = episode.terminations[start + self.config.pred_horizon - 1] if \
-            start + self.config.pred_horizon - 1 < len(episode.terminations) else True
+
             
             
         return {
@@ -77,9 +76,8 @@ class SlidingWindowDataset(Dataset):
             "next_observations": future_obs_seq.astype(np.float32),
             "action_chunks": action_seq.astype(np.float32),
             "rewards": reward_seq.astype(np.float32),
-            "terminations": terminated_seq.astype(np.float32),
+            "terminations": np.array([terminated], dtype=np.float32),  # 只返回一个标量值
             "valid_length": np.array(valid_length, dtype=np.int32),
-            "is_terminal": np.array(is_terminal, dtype=np.bool_)
         }
 
 
@@ -116,7 +114,7 @@ class SlidingWindowCollator:
             dtype=torch.float32
         )
         rewards = torch.zeros(batch_size, self.config.pred_horizon, 1, dtype=torch.float32)
-        terminations = torch.zeros(batch_size, self.config.pred_horizon, 1, dtype=torch.float32)
+        terminations = torch.zeros(batch_size, 1, dtype=torch.float32)  # 修改为只包含一个值
         valid_length = torch.zeros(batch_size, dtype=torch.long)
         is_terminal = torch.zeros(batch_size, dtype=torch.bool)
         
@@ -126,9 +124,9 @@ class SlidingWindowCollator:
             next_observations[i] = torch.from_numpy(item["next_observations"])
             action_chunks[i] = torch.from_numpy(item["action_chunks"])
             rewards[i] = torch.from_numpy(item["rewards"]).float()
-            terminations[i] = torch.from_numpy(item["terminations"]).float()
+            terminations[i] = torch.from_numpy(item["terminations"]).float()  # 直接赋值
             valid_length[i] = torch.tensor(item["valid_length"].item())  # 转换为标量
-            is_terminal[i] = torch.tensor(item["is_terminal"].item())  # 转换为标量
+
             
         return {
             "observations": observations,
@@ -137,7 +135,6 @@ class SlidingWindowCollator:
             "rewards": rewards,
             "terminations": terminations,
             "valid_length": valid_length,
-            "is_terminal": is_terminal
         }
 
 
@@ -227,7 +224,7 @@ if __name__ == "__main__":
         print(f"奖励序列维度: {sample['rewards'].shape}")
         print(f"终止标志维度: {sample['terminations'].shape}")
         print(f"有效长度: {sample['valid_length']}")
-        print(f"是否为末端: {sample['is_terminal']}")
+
 
         # 测试批次处理
         dataloader = DataLoader(sliding_dataset, batch_size=2, collate_fn=SlidingWindowCollator(config))
@@ -238,6 +235,5 @@ if __name__ == "__main__":
         print(f"批次奖励序列维度: {batch['rewards'].shape}")
         print(f"批次终止标志维度: {batch['terminations'].shape}")
         print(f"批次有效长度维度: {batch['valid_length'].shape}")
-        print(f"批次末端标记维度: {batch['is_terminal'].shape}")
 
     print("\n数据集测试完成!")
