@@ -1,0 +1,19 @@
+obs_dim: 10
+action_dim: 4
+cfg:
+  hidden_dim: 256
+  time_dim: 64
+  pred_horizon: 5
+  learning_rate: 0.0003
+  grad_clip_value: 1.0
+  cql_alpha: 1.0
+  cql_temp: 1.0
+  cql_num_samples: 10
+  tau: 0.005
+  gamma: 0.99
+  inference_steps: 1
+  normalize_q_loss: true
+  batch_size: 32
+  num_workers: 4
+  target_update_freq: 1
+  actor_update_freq: 2

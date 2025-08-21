@@ -1,359 +1,407 @@
+import minari
+import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch.utils.data import Dataset, DataLoader
+from tqdm import tqdm
+import lightning as L
+from dataclasses import dataclass
+from typing import List, Dict, Any, Tuple, Optional
+import collections
+from config import Config  # 确保Config类在config.py中定义
 
-from typing import Dict, Tuple
-from torch.autograd.functional import jvp
 
+class SlidingWindowDataset(Dataset):
+    """滑动窗口数据集，提供平移的观测窗口"""
 
-class MeanTimeConditionedFlowModel(nn.Module):
-    """带时间条件约束的流匹配模型"""
-
-    def __init__(self, obs_dim: int, action_dim: int, config):
+    def __init__(self, dataset, config: Config, stats=None):
         """
-        初始化时间条件流模型
-        
         参数:
-            obs_dim: 观测维度
-            action_dim: 动作维度
+            dataset: Minari数据集
             config: Config对象
+            stats: 可选的统计量字典，如果提供则使用，否则计算新的统计量
         """
-        super().__init__()
+        self.config = config
+        self.episodes = []  # 存储所有样本
+
+        # 计算或使用提供的统计量
+        if stats is None:
+            self.stats = self._compute_stats(dataset)
+        else:
+            self.stats = stats
+
+        # 处理每个episode
+        for episode in tqdm(dataset, desc="创建滑动窗口数据集"):
+            ep_len = len(episode.actions)
+
+            # 跳过太短的序列（至少需要1个观测）
+            if ep_len < 1:
+                continue
+
+            # 准备数据 - 确保使用float32减少内存占用
+            obs = self._normalize(episode.observations, self.stats["observations"]).astype(np.float32)
+            actions = self._normalize(episode.actions, self.stats["actions"]).astype(np.float32)
+            rewards = episode.rewards.astype(np.float32)
+            terminations = episode.terminations.astype(np.float32)
+
+            # 确保滑动步长不超过动作序列长度
+            window_stride = min(config.window_stride, ep_len)
+
+            # 创建滑动窗口 - 包含所有可能的时间点
+            for start_idx in range(0, ep_len, window_stride):
+                # 1. 准备当前观测窗口
+                # 计算观测窗口的起始和结束索引
+                obs_start = max(0, start_idx - config.obs_horizon + 1)
+                obs_end = start_idx + 1
+                current_obs = obs[obs_start:obs_end]
+
+                # 如果观测窗口不足，使用最近的观测进行填充
+                if len(current_obs) < config.obs_horizon:
+                    padding_count = config.obs_horizon - len(current_obs)
+                    # 使用最近的观测进行填充（而不是第一个观测）
+                    padding = np.tile(current_obs[-1], (padding_count, 1))
+                    current_obs = np.concatenate([padding, current_obs])
+
+                # 2. 准备未来观测窗口（动作块执行后的状态）
+                # 计算未来观测窗口的起始索引
+                next_obs_start = start_idx + config.pred_horizon
+
+                # 处理边界情况
+                if next_obs_start >= ep_len:
+                    # 整个未来观测窗口都需要填充
+                    next_obs = np.tile(obs[-1], (config.obs_horizon, 1))
+                else:
+                    next_obs_end = min(next_obs_start + config.obs_horizon, ep_len)
+                    next_obs = obs[next_obs_start:next_obs_end]
+
+                    # 如果未来观测窗口不足，使用最后一个有效观测填充
+                    if len(next_obs) < config.obs_horizon:
+                        padding_count = config.obs_horizon - len(next_obs)
+                        padding = np.tile(next_obs[-1], (padding_count, 1))
+                        next_obs = np.concatenate([next_obs, padding])
+
+                # 3. 准备动作块
+                # 计算动作块的结束索引
+                act_end = min(start_idx + config.pred_horizon, ep_len)
+                action_chunk = actions[start_idx:act_end]
+                actual_action_length = len(action_chunk)
+
+                # 创建填充后的动作块
+                padded_action_chunk = np.zeros((config.pred_horizon, actions.shape[1]), dtype=actions.dtype)
+                if actual_action_length > 0:
+                    padded_action_chunk[:actual_action_length] = action_chunk
+
+                # 4. 准备奖励序列 - 统一为2D (pred_horizon, 1)
+                reward_seq = rewards[start_idx:act_end].reshape(-1, 1)  # 变为列向量
+                padded_reward_seq = np.zeros((config.pred_horizon, 1), dtype=rewards.dtype)
+                if actual_action_length > 0:
+                    padded_reward_seq[:actual_action_length] = reward_seq
+                    # 超出部分填充最后一个实际奖励
+                    padded_reward_seq[actual_action_length:] = reward_seq[-1]
+                else:
+                    # 如果没有实际奖励，填充0
+                    padded_reward_seq[:] = 0
+
+                # 5. 准备终止标志序列 - 统一为2D (pred_horizon, 1)
+                termination_seq = terminations[start_idx:act_end].reshape(-1, 1)  # 变为列向量
+                padded_termination_seq = np.zeros((config.pred_horizon, 1), dtype=terminations.dtype)
+                if actual_action_length > 0:
+                    padded_termination_seq[:actual_action_length] = termination_seq
+                    # 超出部分填充1
+                    padded_termination_seq[actual_action_length:] = 1
+                else:
+                    # 如果没有实际终止标志，填充1
+                    padded_termination_seq[:] = 1
+
+                # 6. 计算有效长度
+                valid_length = actual_action_length
+
+                # 7. 添加到数据集
+                self.episodes.append({
+                    "observations": current_obs,  # 历史观测序列 (obs_horizon, obs_dim)
+                    "next_observations": next_obs,  # 未来观测序列 (obs_horizon, obs_dim)
+                    "action_chunks": padded_action_chunk,  # 动作块 (pred_horizon, act_dim)
+                    "rewards": padded_reward_seq,  # 奖励序列 (pred_horizon, 1)
+                    "terminations": padded_termination_seq,  # 终止标志 (pred_horizon, 1)
+                    "valid_length": valid_length,
+                    "start_idx": start_idx,
+                    "episode_length": ep_len,
+                    "is_terminal": (start_idx + config.pred_horizon >= ep_len)  # 标记是否为末端
+                })
+
+    def __len__(self):
+        """返回数据集大小"""
+        return len(self.episodes)
+
+    def __getitem__(self, idx):
+        """获取单个样本"""
+        item = self.episodes[idx]
+        return {
+            "observations": torch.as_tensor(item["observations"], dtype=torch.float32),
+            "next_observations": torch.as_tensor(item["next_observations"], dtype=torch.float32),
+            "action_chunks": torch.as_tensor(item["action_chunks"], dtype=torch.float32),
+            "rewards": torch.as_tensor(item["rewards"], dtype=torch.float32),
+            "terminations": torch.as_tensor(item["terminations"], dtype=torch.float32),
+            "valid_length": torch.tensor(item["valid_length"], dtype=torch.long),
+            "start_idx": torch.tensor(item["start_idx"], dtype=torch.long),
+            "episode_length": torch.tensor(item["episode_length"], dtype=torch.long),
+            "is_terminal": torch.tensor(item["is_terminal"], dtype=torch.bool)
+        }
+
+    def _compute_stats(self, dataset):
+        """计算整个数据集的统计量 - 使用在线计算避免内存爆炸"""
+        # 初始化统计量
+        obs_min = None
+        obs_max = None
+        obs_sum = None
+        obs_sq_sum = None
+        obs_count = 0
+
+        act_min = None
+        act_max = None
+        act_sum = None
+        act_sq_sum = None
+        act_count = 0
+
+        # 遍历所有episode计算统计量
+        for episode in dataset:
+            # 处理观测数据
+            ep_obs = episode.observations
+            if obs_min is None:
+                obs_min = ep_obs.min(axis=0)
+                obs_max = ep_obs.max(axis=0)
+                obs_sum = ep_obs.sum(axis=0)
+                obs_sq_sum = (ep_obs ** 2).sum(axis=0)
+            else:
+                obs_min = np.minimum(obs_min, ep_obs.min(axis=0))
+                obs_max = np.maximum(obs_max, ep_obs.max(axis=0))
+                obs_sum += ep_obs.sum(axis=0)
+                obs_sq_sum += (ep_obs ** 2).sum(axis=0)
+            obs_count += len(ep_obs)
+
+            # 处理动作数据
+            ep_act = episode.actions
+            if act_min is None:
+                act_min = ep_act.min(axis=0)
+                act_max = ep_act.max(axis=0)
+                act_sum = ep_act.sum(axis=0)
+                act_sq_sum = (ep_act ** 2).sum(axis=0)
+            else:
+                act_min = np.minimum(act_min, ep_act.min(axis=0))
+                act_max = np.maximum(act_max, ep_act.max(axis=0))
+                act_sum += ep_act.sum(axis=0)
+                act_sq_sum += (ep_act ** 2).sum(axis=0)
+            act_count += len(ep_act)
+
+        # 计算均值和标准差
+        obs_mean = obs_sum / obs_count
+        obs_std = np.sqrt(obs_sq_sum / obs_count - obs_mean ** 2 + 1e-8)
+
+        act_mean = act_sum / act_count
+        act_std = np.sqrt(act_sq_sum / act_count - act_mean ** 2 + 1e-8)
+
+        return {
+            "observations": {
+                "min": obs_min,
+                "max": obs_max,
+                "mean": obs_mean,
+                "std": obs_std
+            },
+            "actions": {
+                "min": act_min,
+                "max": act_max,
+                "mean": act_mean,
+                "std": act_std
+            }
+        }
+
+    def _normalize(self, data, stats):
+        """数据归一化"""
+        if self.config.normalize_data:
+            return (data - stats["mean"]) / stats["std"]
+        return data
+
+    def denormalize(self, data, stats):
+        """数据反归一化"""
+        if self.config.normalize_data:
+            return data * stats["std"] + stats["mean"]
+        return data
+
+
+class SlidingWindowCollator:
+    """滑动窗口数据集的批处理函数 - 优化内存使用"""
+
+    def __init__(self, config: Config):
         self.config = config
 
-        # 时间特征嵌入
-        self.time_embed = nn.Sequential(
-            nn.Linear(1, config.time_dim),
-            nn.SiLU(),
-            nn.Linear(config.time_dim, config.time_dim)
+    def __call__(self, batch):
+        if len(batch) == 0:
+            return {}
+
+        # 获取维度信息
+        obs_dim = batch[0]["observations"].shape[-1]  # 观测维度
+        obs_horizon = self.config.obs_horizon  # 观测窗口长度
+        act_dim = batch[0]["action_chunks"].shape[-1]  # 动作维度
+        pred_horizon = self.config.pred_horizon  # 预测时域长度
+
+        # 预先分配张量
+        batch_size = len(batch)
+
+        # 观测窗口: (batch_size, obs_horizon, obs_dim)
+        observations = torch.zeros((batch_size, obs_horizon, obs_dim), dtype=torch.float32)
+
+        # 未来观测窗口: (batch_size, obs_horizon, obs_dim)
+        next_observations = torch.zeros((batch_size, obs_horizon, obs_dim), dtype=torch.float32)
+
+        # 动作块: (batch_size, pred_horizon, act_dim)
+        action_chunks = torch.zeros((batch_size, pred_horizon, act_dim), dtype=torch.float32)
+
+        # 奖励序列: (batch_size, pred_horizon, 1)
+        rewards = torch.zeros((batch_size, pred_horizon, 1), dtype=torch.float32)
+
+        # 终止标志序列: (batch_size, pred_horizon, 1)
+        terminations = torch.zeros((batch_size, pred_horizon, 1), dtype=torch.float32)
+
+        # 其他标量字段
+        valid_length = torch.zeros(batch_size, dtype=torch.long)
+        start_idx = torch.zeros(batch_size, dtype=torch.long)
+        episode_length = torch.zeros(batch_size, dtype=torch.long)
+        is_terminal = torch.zeros(batch_size, dtype=torch.bool)
+
+        for i, item in enumerate(batch):
+            # 观测窗口
+            observations[i] = item["observations"]
+
+            # 未来观测窗口
+            next_observations[i] = item["next_observations"]
+
+            # 动作块
+            action_chunks[i] = item["action_chunks"]
+
+            # 奖励序列
+            rewards[i] = item["rewards"]
+
+            # 终止标志序列
+            terminations[i] = item["terminations"]
+
+            # 其他标量字段
+            valid_length[i] = item["valid_length"]
+            start_idx[i] = item["start_idx"]
+            episode_length[i] = item["episode_length"]
+            is_terminal[i] = item["is_terminal"]
+
+        return {
+            "observations": observations,
+            "next_observations": next_observations,
+            "action_chunks": action_chunks,
+            "rewards": rewards,
+            "terminations": terminations,
+            "valid_length": valid_length,
+            "start_idx": start_idx,
+            "episode_length": episode_length,
+            "is_terminal": is_terminal
+        }
+
+
+class MinariDataModule(L.LightningDataModule):
+    """Minari数据集模块，用于PyTorch Lightning训练"""
+
+    def __init__(self, config: Config):
+        super().__init__()
+        self.config = config
+        self.train_dataset = None
+        self.val_dataset = None
+        self.stats = None
+        self.collator = SlidingWindowCollator(config)
+
+    def prepare_data(self):
+        """准备数据集 - 在训练前调用"""
+        # 加载Minari数据集
+        minari_dataset = minari.load_dataset(self.config.dataset_name)
+        episodes = list(minari_dataset.iterate_episodes())
+
+        # 分割episode为训练/验证集 (80/20)
+        num_episodes = len(episodes)
+        train_size = int(0.8 * num_episodes)
+        train_episodes = episodes[:train_size]
+        val_episodes = episodes[train_size:]
+
+        # 先创建训练集以计算统计量
+        self.train_dataset = SlidingWindowDataset(train_episodes, config=self.config)
+        self.stats = self.train_dataset.stats  # 保存统计量
+
+        # 验证集使用训练集的统计量，避免数据泄漏
+        self.val_dataset = SlidingWindowDataset(val_episodes, config=self.config, stats=self.stats)
+
+    def train_dataloader(self):
+        """训练数据加载器"""
+        persistent = self.config.num_workers > 0
+        return DataLoader(
+            self.train_dataset,
+            batch_size=self.config.batch_size,
+            shuffle=True,
+            collate_fn=self.collator,
+            num_workers=self.config.num_workers,
+            persistent_workers=persistent
         )
 
-        # 观测特征处理
-        self.obs_embed = nn.Sequential(
-            nn.Linear(obs_dim, config.hidden_dim),
-            nn.SiLU(),
-            nn.Linear(config.hidden_dim, config.hidden_dim)
+    def val_dataloader(self):
+        """验证数据加载器"""
+        persistent = self.config.num_workers > 0
+        return DataLoader(
+            self.val_dataset,
+            batch_size=self.config.batch_size,
+            shuffle=False,
+            collate_fn=self.collator,
+            num_workers=self.config.num_workers,
+            persistent_workers=persistent
         )
 
-        # 噪声特征处理
-        self.noise_embed = nn.Sequential(
-            nn.Linear(action_dim, config.hidden_dim),
-            nn.SiLU(),
-            nn.Linear(config.hidden_dim, config.hidden_dim)
-        )
+    def test_dataloader(self):
+        """测试数据加载器 - 使用验证集"""
+        return self.val_dataloader()
 
-        # 联合处理模块
-        self.joint_processor = nn.Sequential(
-            nn.Linear(config.hidden_dim * 2 + config.time_dim * 2, config.hidden_dim * 2),
-            nn.SiLU(),
-            nn.Linear(config.hidden_dim * 2, config.hidden_dim),
-            nn.SiLU(),
-            nn.Linear(config.hidden_dim, action_dim)
-        )
-
-    def forward(self, obs: torch.Tensor, z: torch.Tensor, r: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
-        """
-        前向传播计算速度场
-        
-        参数:
-            obs: 观测张量 [B, obs_dim]
-            z: 混合样本 [B, pred_horizon, action_dim]
-            r: 参考时间步 [B, 1] 或 [B]
-            t: 当前时间步 [B]
-
-        返回:
-            速度场 [B, pred_horizon, action_dim]
-        """
-        # 获取模型所在的设备
-        device = next(self.parameters()).device
-
-        # 将输入张量移动到模型设备
-        obs = obs.to(device)
-        z = z.to(device)
-        r = r.to(device)
-        t = t.to(device)
-
-        # 确保r和t具有正确的维度
-        if r.dim() == 1:
-            r = r.unsqueeze(-1)
-        if t.dim() == 1:
-            t = t.unsqueeze(-1)
-
-        # 嵌入时间
-        t_emb = self.time_embed(t.float())  # [B, time_dim]
-        r_emb = self.time_embed(r.float())  # [B, time_dim]
-
-        # 嵌入观测
-        obs_emb = self.obs_embed(obs)  # [B, hidden_dim]
-
-        # 嵌入噪声
-        # 对每个时间步独立处理噪声
-        B, H, A = z.shape
-        noise_emb = self.noise_embed(z.view(B * H, A))  # [B*H, hidden_dim]
-        noise_emb = noise_emb.view(B, H, -1)  # [B, H, hidden_dim]
-
-        # 扩展观测和时间嵌入以匹配时间维度
-        obs_emb = obs_emb.unsqueeze(1).expand(-1, H, -1)  # [B, H, hidden_dim]
-        t_emb = t_emb.unsqueeze(1).expand(-1, H, -1)  # [B, H, time_dim]
-        r_emb = r_emb.unsqueeze(1).expand(-1, H, -1)  # [B, H, time_dim]
-
-        # 合并特征
-        combined = torch.cat([obs_emb, noise_emb, r_emb, t_emb], dim=-1)  # [B, H, hidden_dim*2+time_dim*2]
-
-        # 预测速度场
-        mean_velocity = self.joint_processor(combined)  # [B, H, action_dim]
-
-        return mean_velocity
+    def get_stats(self):
+        """获取数据集的统计信息"""
+        return self.stats
 
 
-class MeanFlowPolicyAgent:
-    """MeanFlow策略代理"""
-
-    def __init__(self, obs_dim: int, action_dim: int, config: "Config"):
-        """
-        初始化MeanFlow策略代理
-
-        参数:
-            obs_dim: 观测维度
-            action_dim: 动作维度
-            config: 配置对象
-        """
-        from config import Config  # 避免循环导入
-        self.config: Config = config
-        self.model = MeanTimeConditionedFlowModel(obs_dim, action_dim, config)
-        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=config.learning_rate)
-
-
-    @staticmethod
-    def sample_t_r(n_samples: int, device: str = 'cpu') -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        采样时间点t和r
-        
-        参数:
-            n_samples: 样本数量
-            device: 设备类型
-        
-        返回:
-            t和r的时间张量
-        """
-        t = torch.rand(n_samples, device=device)
-        r = torch.rand(n_samples, device=device) * t
-        return t.unsqueeze(1), r.unsqueeze(1)
-
-    @torch.no_grad()
-    def predict_action_chunk(self, batch: Dict[str, torch.Tensor], n_steps: int = 1) -> torch.Tensor:
-        """
-        预测动作块
-
-        参数:
-            batch: 包含观测数据的批次字典
-            n_steps: 采样步数，1表示一步生成，>1表示多步迭代生成
-
-        返回:
-            预测的动作张量
-        """
-        self.model.eval()
-        # 获取模型所在的设备
-        device = next(self.model.parameters()).device
-
-        observations = batch["observations"].to(device)  # [B, obs_horizon, obs_dim]
-
-        # 使用最新的观测作为条件
-        obs_cond = observations[:, -1, :]  # [B, obs_dim]
-
-        # 生成初始噪声
-        noise = torch.randn(
-            observations.size(0), 
-            self.config.pred_horizon, 
-            self.config.action_dim
-        ).to(device)
-        
-        # 使用MeanFlow采样
-        x = self.sample_mean_flow(obs_cond, noise, n_steps=n_steps)
-        
-        return x
-
-    @torch.no_grad()
-    def select_action(self, batch: Dict[str, torch.Tensor], n_steps: int = 1) -> torch.Tensor:
-        """
-        根据环境观测选择单个动作
-
-        参数:
-            batch: 包含观测数据的批次字典
-            n_steps: 采样步数
-
-        返回:
-            选择的动作
-        """
-        # 使用predict_action_chunk获取完整的动作块，然后只返回第一个动作
-        action_chunk = self.predict_action_chunk(batch, n_steps=n_steps)
-        return action_chunk[:, 0, :]  # 返回动作块中的第一个动作
-
-    def sample_mean_flow(self, obs_cond: torch.Tensor, noise: torch.Tensor, n_steps: int = 1) -> torch.Tensor:
-        """
-        使用MeanFlow进行采样生成动作
-        
-        参数:
-            obs_cond: 条件观测 [B, obs_dim]
-            noise: 初始噪声 [B, pred_horizon, action_dim]
-            n_steps: 采样步数，1表示一步生成，>1表示多步迭代生成
-            
-        返回:
-            生成的动作轨迹
-        """
-        device = next(self.model.parameters()).device
-        obs_cond = obs_cond.to(device)
-        x = noise.to(device)
-        dt = 1.0 / n_steps
-        
-        for i in range(n_steps, 0, -1):
-            r = torch.full((x.shape[0],), (i-1) * dt, device=device).unsqueeze(1)
-            t = torch.full((x.shape[0],), i * dt, device=device).unsqueeze(1)
-            velocity = self.model(obs_cond, x, r, t)
-            x = x - velocity * dt
-
-    
-        return x
-
-    def forward(self, batch: Dict[str, torch.Tensor]) -> torch.Tensor:
-        """
-        前向传播，计算MeanFlow损失
-
-        参数:
-            batch: 包含观测和动作的批次字典
-
-        返回:
-            计算的损失值
-        """
-        # 获取模型所在的设备
-        device = next(self.model.parameters()).device
-
-        # 将输入数据移动到模型设备
-        observations = batch["observations"].to(device)  # [B, obs_horizon, obs_dim]
-        actions = batch["actions"].to(device)  # [B, pred_horizon, action_dim]
-
-        # 根据Algorithm 1实现MeanFlow训练逻辑
-        # 生成噪声
-        noise = torch.randn_like(actions, device=device)
-        
-        # 采样时间步
-        t, r = self.sample_t_r(actions.shape[0], device=device)
-        
-        # 创建混合样本
-        z = (1 - t.unsqueeze(-1)) * actions + t.unsqueeze(-1) * noise
-        v = noise - actions
-        
-        # 使用最新的观测作为条件
-        obs_cond = observations[:, -1, :]  # [B, obs_dim]
-
-        # 计算Jacobian-Vector Product
-        u, dudt = jvp(
-            func=self.model,
-            inputs=(obs_cond, z, r, t),
-            v=(torch.zeros_like(obs_cond), v, torch.zeros_like(r), torch.ones_like(t)),
-            create_graph=True
-        )
-        
-        # 计算目标速度场
-        u_tgt = v - (t.unsqueeze(-1) - r.unsqueeze(-1)) * dudt
-        u_tgt = u_tgt.detach()
-        
-        # 预测速度场
-        predicted_velocity = self.model(obs_cond, z, r, t)
-        
-        # 计算损失
-        # # 使用标准MSE损失，简单有效
-        # loss = F.mse_loss(predicted_velocity, u_tgt)
-        
-        # 如果需要使用自适应损失函数，可以取消注释以下代码
-        loss = self._adaptive_mse_loss(predicted_velocity, u_tgt)
-        
-        return loss
-
-    def _adaptive_mse_loss(self, pred: torch.Tensor, target: torch.Tensor, gamma: float = 0.5, c: float = 1e-3) -> torch.Tensor:
-        """
-        自适应MSE损失函数，根据样本难度动态调整权重
-        
-        Args:
-            pred: 预测值
-            target: 目标值
-            gamma: 控制自适应行为的超参数 (0-1)，值越大对高误差样本的关注度越高
-            c: 稳定常数，防止除零
-            
-        Returns:
-            加权后的损失值
-        """
-        # 计算逐元素平方误差
-        sq_error = (pred - target) ** 2
-
-        # 计算每个样本的MSE（保持批次维度）
-        # 对非批次维度求平均
-        dims = tuple(range(1, sq_error.ndim))
-        sample_mse = sq_error.mean(dim=dims) if dims else sq_error
-
-        # 计算自适应权重: 对于误差较大的样本给予较小的权重
-        p = 1.0 - gamma
-        weights = 1.0 / (sample_mse + c).pow(p)
-
-        # 应用权重并返回平均损失
-        weighted_loss = (weights.detach() * sample_mse).mean()
-        return weighted_loss
-
-
+# 测试代码
 if __name__ == "__main__":
-    # 测试模型功能
-    from config import Config
-
-    print("测试TimeConditionedFlowModel...")
+    # 测试数据集功能
+    print("测试SlidingWindowDataset功能...")
 
     # 创建配置
     config = Config()
-    config.action_dim = 7
+    # 加载pusher数据集
+    # Action：SpaceBox(-2.0, 2.0, (7,), float32)
+    # Observation：SpaceBox(-inf, inf, (23,), float64)
+    dataset = minari.load_dataset(config.dataset_name)
+    # 创建滑动窗口数据集
+    sliding_dataset = SlidingWindowDataset(dataset, config)
 
-    # 创建模型
-    obs_dim = 23
-    action_dim = 7
-    model = MeanTimeConditionedFlowModel(obs_dim, action_dim, config)
+    print(f"数据集大小: {len(sliding_dataset)}")
 
-    # 创建测试数据
-    batch_size = 2
-    obs = torch.randn(batch_size, obs_dim)
-    t = torch.rand(batch_size)
-    noise = torch.randn(batch_size, config.pred_horizon, action_dim)
-    r = torch.zeros(batch_size, 1)
+    # 测试获取数据
+    if len(sliding_dataset) > 0:
+        sample = sliding_dataset[0]
+        print(f"观测数据维度: {sample['observations'].shape}")
+        print(f"未来观测数据维度: {sample['next_observations'].shape}")
+        print(f"动作块维度: {sample['action_chunks'].shape}")
+        print(f"奖励序列维度: {sample['rewards'].shape}")
+        print(f"终止标志维度: {sample['terminations'].shape}")
+        print(f"有效长度: {sample['valid_length']}")
+        print(f"是否为末端: {sample['is_terminal']}")
 
-    # 测试前向传播
-    output = model(obs, noise, r, t)
-    print(f"输入观测维度: {obs.shape}")
-    print(f"输入时间维度: {t.shape}")
-    print(f"输入噪声维度: {noise.shape}")
-    print(f"输出速度场维度: {output.shape}")
+        # 测试批次处理
+        dataloader = DataLoader(sliding_dataset, batch_size=2, collate_fn=SlidingWindowCollator(config))
+        batch = next(iter(dataloader))
+        print(f"批次观测数据维度: {batch['observations'].shape}")
+        print(f"批次未来观测数据维度: {batch['next_observations'].shape}")
+        print(f"批次动作块维度: {batch['action_chunks'].shape}")
+        print(f"批次奖励序列维度: {batch['rewards'].shape}")
+        print(f"批次终止标志维度: {batch['terminations'].shape}")
+        print(f"批次有效长度维度: {batch['valid_length'].shape}")
+        print(f"批次末端标记维度: {batch['is_terminal'].shape}")
 
-    print("\n测试FlowPolicyAgent...")
-
-    # 创建代理
-    agent = MeanFlowPolicyAgent(obs_dim, action_dim, config)
-
-    # 创建测试批次
-    batch = {
-        "observations": torch.randn(batch_size, config.obs_horizon, obs_dim),
-        "actions": torch.randn(batch_size, config.pred_horizon, action_dim)
-    }
-
-    # 测试代理前向传播
-    loss = agent.forward(batch)
-    print(f"损失值: {loss}")
-
-    # 测试动作预测
-    predicted_actions = agent.predict_action_chunk(batch)
-    print(f"预测动作维度: {predicted_actions.shape}")
-    
-    # 测试一步采样方法 (等同于原来的onestep)
-    predicted_actions_onestep = agent.predict_action_chunk(batch, n_steps=1)
-    print(f"一步采样预测动作维度: {predicted_actions_onestep.shape}")
-    
-    # 测试多步采样方法 (等同于原来的iterative)
-    predicted_actions_multistep = agent.predict_action_chunk(batch, n_steps=100)
-    print(f"多步采样预测动作维度: {predicted_actions_multistep.shape}")
-
-    print("\n所有测试完成!")
+    print("\n数据集测试完成!")

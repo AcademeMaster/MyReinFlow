@@ -19,11 +19,11 @@ class Config:
     dataset_name: str = "mujoco/pusher/expert-v0"
     
     # 序列参数
-    obs_horizon: int = 1
+    obs_horizon: int = 2
     pred_horizon: int = 64
     action_horizon: int = 32
     inference_steps: int = 1
-    
+    window_stride: int = 1  # 滑动窗口步长
     # 模型参数
     time_dim: int = 32
     hidden_dim: int = 256
@@ -42,13 +42,17 @@ class Config:
     # Accelerator相关参数
     mixed_precision: str = "no"
     gradient_accumulation_steps: int = 1
+    num_workers: int = 4  # 增加num_workers以提高数据加载性能
 
 
     grad_clip_value: float = 1.0
     cql_alpha: float = 1.0
     cql_temp: float = 1.0
+    cql_num_samples: int = 10
     tau: float = 0.005
     gamma: float = 0.99
+    actor_update_freq: int = 1
+    target_update_freq: int = 1
 
     normalize_q_loss: bool = True
     device: str = "cuda" if torch.cuda.is_available() else "cpu"

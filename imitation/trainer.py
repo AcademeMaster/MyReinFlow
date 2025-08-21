@@ -11,7 +11,7 @@ import minari
 # 创建模型代理
 from normalflow import FlowPolicyAgent
 from meanflow import MeanFlowPolicyAgent
-from meanflow_ql import ImprovedMeanFlowPolicyAgent
+
 class FlowModelTrainer:
     """流匹配模型训练器"""
     
@@ -37,7 +37,7 @@ class FlowModelTrainer:
         self.config.action_dim = action_dim  # 添加到配置中以便测试时使用
         
 
-        self.agent = ImprovedMeanFlowPolicyAgent(obs_dim, action_dim, config)
+        self.agent = MeanFlowPolicyAgent(obs_dim, action_dim, config)
         
         # 创建数据加载器
         from dataset import collate_fn_fixed

@@ -1,21 +1,24 @@
 
+from dataclasses import dataclass
+from typing import Dict, Tuple, Any, Optional, List
 import copy
-from typing import Dict, Tuple, List
-from collections import defaultdict
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 from torch.autograd.functional import jvp
-from torch.utils.data import DataLoader, Dataset
-import torch.optim as optim
-from dataclasses import dataclass
+from torch.utils.data import Dataset, DataLoader
+import lightning as L
+from torch import optim
+
+# 设置Float32矩阵乘法精度以更好地利用Tensor Core
+torch.set_float32_matmul_precision('high')
 
 
+# ========= Config =========
 @dataclass
 class Config:
-    """配置参数类"""
     hidden_dim: int = 256
     time_dim: int = 64
     pred_horizon: int = 5
@@ -23,629 +26,519 @@ class Config:
     grad_clip_value: float = 1.0
     cql_alpha: float = 1.0
     cql_temp: float = 1.0
+    cql_num_samples: int = 10  # Added for configurability
     tau: float = 0.005
     gamma: float = 0.99
-    inference_steps: int = 1  # Optimized for one-step as per MeanFlow paper
+    inference_steps: int = 1
     normalize_q_loss: bool = True
-    device: str = "cuda" if torch.cuda.is_available() else "cpu"
+    batch_size: int = 32
+    num_workers: int = 4
+    target_update_freq: int = 1  # 每 N 个 batch 软更新 target critic
+    actor_update_freq: int = 2  # 每 N 个 batch 更新一次 actor
 
 
-class DoubleCriticObsAct(nn.Module):
-    """双Q网络Critic，处理多步动作序列输入"""
-
-    def __init__(self, obs_dim: int, action_dim: int, hidden_dim: int, action_horizon: int):
-        super().__init__()
-        self.obs_dim = obs_dim
-        self.action_dim = action_dim
-        self.hidden_dim = hidden_dim
-        self.action_horizon = action_horizon
-
-        total_action_dim = action_dim * action_horizon
-
-        # Q1网络
-        self.q1_net = nn.Sequential(
-            nn.Linear(obs_dim + total_action_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, 1)
-        )
-
-        # Q2网络
-        self.q2_net = nn.Sequential(
-            nn.Linear(obs_dim + total_action_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, 1)
-        )
-
-    def _prepare_inputs(self, obs: Tensor, actions: Tensor) -> Tensor:
-        """准备输入：处理形状并拼接"""
-        if actions.dim() > 3:
-            actions = actions.view(-1, self.action_horizon, self.action_dim)
-        elif actions.dim() == 2:
-            batch_size = actions.shape[0]
-            actions = actions.view(batch_size, self.action_horizon, self.action_dim)
-        elif actions.dim() != 3:
-            raise ValueError(f"Unexpected actions dimension: {actions.dim()}")
-
-        batch_size, horizon, _ = actions.shape
-        actions_flat = actions.reshape(batch_size, -1)
-
-        if obs.dim() > 2:
-            obs = obs.reshape(batch_size, -1)
-        elif obs.dim() < 2:
-            obs = obs.unsqueeze(0)
-
-        return torch.cat([obs, actions_flat], dim=-1)
-
-    def forward(self, obs: Tensor, actions: Tensor) -> Tuple[Tensor, Tensor]:
-        """计算状态-动作序列的双Q值"""
-        combined = self._prepare_inputs(obs, actions)
-        q1 = self.q1_net(combined)
-        q2 = self.q2_net(combined)
-        return q1, q2
-
-    def q1(self, obs: Tensor, actions: Tensor) -> Tensor:
-        """仅计算Q1值"""
-        combined = self._prepare_inputs(obs, actions)
-        return self.q1_net(combined)
-
-
-class ImprovedTimeEmbedding(nn.Module):
-    """改进的时间特征嵌入模块，使用正弦位置编码"""
-
-    def __init__(self, time_dim: int, max_period: int = 10000):
-        super().__init__()
-        self.time_dim = time_dim
-        self.max_period = max_period
-
-        assert time_dim % 2 == 0, "time_dim must be even"
-
-        half_dim = time_dim // 2
-        exponents = torch.arange(half_dim, dtype=torch.float32) / half_dim
-        self.freqs = 1.0 / (max_period ** exponents)
-
-        self.mlp = nn.Sequential(
-            nn.Linear(time_dim, time_dim * 2),
-            nn.SiLU(),
-            nn.Linear(time_dim * 2, time_dim)
-        )
-
-    def forward(self, t: Tensor) -> Tensor:
-        """嵌入时间特征"""
-        t = t.float()
-
-        if t.dim() == 1:
-            t = t.unsqueeze(-1)
-        elif t.dim() > 2:
-            t = t.view(t.shape[0], -1)
-
-        device = t.device
-        freqs = self.freqs.to(device)
-        args = t * freqs[None, :]
-
-        sin_enc = torch.sin(args)
-        cos_enc = torch.cos(args)
-
-        encoding = torch.cat([sin_enc, cos_enc], dim=-1)
-        return self.mlp(encoding)
-
-
+# ========= Small modules =========
 class FeatureEmbedding(nn.Module):
-    """通用特征嵌入模块"""
-
     def __init__(self, input_dim: int, hidden_dim: int):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.SiLU(),
-            nn.Linear(hidden_dim, hidden_dim)
+            nn.Linear(hidden_dim, hidden_dim),
         )
 
     def forward(self, x: Tensor) -> Tensor:
-        """嵌入特征"""
         return self.net(x)
 
 
-class ImprovedMeanTimeConditionedFlowModel(nn.Module):
-    """改进的带时间条件约束的流匹配模型"""
+class TimeEmbedding(nn.Module):
+    """sin/cos time embedding + MLP"""
 
+    def __init__(self, time_dim: int, max_period: int = 10_000):
+        super().__init__()
+        assert time_dim % 2 == 0, "time_dim must be even"
+        half = time_dim // 2
+        exponents = torch.arange(half, dtype=torch.float32) / float(half)
+        freqs = 1.0 / (max_period ** exponents)
+        self.register_buffer("freqs", freqs, persistent=False)
+        self.mlp = nn.Sequential(
+            nn.Linear(time_dim, time_dim * 2),
+            nn.SiLU(),
+            nn.Linear(time_dim * 2, time_dim),
+        )
+        self.time_dim = time_dim
+
+    def forward(self, t: Tensor) -> Tensor:
+        t = t.view(-1).float()  # [B]
+        args = t.unsqueeze(-1) * self.freqs.unsqueeze(0)  # [B, half]
+        enc = torch.cat([torch.sin(args), torch.cos(args)], dim=-1)  # [B, time_dim]
+        return self.mlp(enc)
+
+
+# ========= Critic (Double Q over obs + action-chunk) =========
+class DoubleCriticObsAct(nn.Module):
+    def __init__(self, obs_dim: int, action_dim: int, hidden_dim: int, action_horizon: int):
+        super().__init__()
+        total_action_dim = action_dim * action_horizon
+
+        def make_net():
+            return nn.Sequential(
+                nn.Linear(obs_dim + total_action_dim, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, 1),
+            )
+
+        self.q1 = make_net()
+        self.q2 = make_net()
+
+    @staticmethod
+    def _prep(obs: Tensor, actions: Tensor) -> Tensor:
+        # obs: [B, seq, obs_dim] or [B, obs_dim] - flatten sequences if present (assumes concatenation, no seq modeling)
+        if obs.dim() > 2:
+            obs = obs.reshape(obs.shape[0], -1)
+        elif obs.dim() == 1:
+            obs = obs.unsqueeze(0)
+        # actions: [B,H,A] or [B,H*A]
+        if actions.dim() == 3:
+            act = actions.reshape(actions.shape[0], -1)
+        elif actions.dim() == 2:
+            act = actions
+        else:
+            raise ValueError(f"bad actions dim={actions.dim()}")
+        return torch.cat([obs, act], dim=-1)
+
+    def forward(self, obs: Tensor, actions: Tensor) -> Tuple[Tensor, Tensor]:
+        x = self._prep(obs, actions)
+        return self.q1(x), self.q2(x)
+
+
+# ========= Time-conditioned flow model (predicts velocity [B,H,A]) =========
+# 输入obs,action*horizon,时间t,r
+class MeanTimeCondFlow(nn.Module):
     def __init__(self, obs_dim: int, action_dim: int, hidden_dim: int, time_dim: int, pred_horizon: int):
         super().__init__()
-        self.obs_dim = obs_dim
-        self.action_dim = action_dim
-        self.hidden_dim = hidden_dim
-        self.time_dim = time_dim
+        self.obs_dim, self.action_dim = obs_dim, action_dim
         self.pred_horizon = pred_horizon
-
-        self.time_embed = ImprovedTimeEmbedding(time_dim)
+        self.t_embed = TimeEmbedding(time_dim)
+        self.r_embed = TimeEmbedding(time_dim)
         self.obs_embed = FeatureEmbedding(obs_dim, hidden_dim)
         self.noise_embed = FeatureEmbedding(action_dim, hidden_dim)
-
-        self.joint_processor = nn.Sequential(
-            nn.Linear(hidden_dim * 2 + time_dim * 2, hidden_dim * 2),
+        joint_in = hidden_dim + hidden_dim + time_dim + time_dim
+        self.net = nn.Sequential(
+            nn.Linear(joint_in, hidden_dim * 2),
             nn.SiLU(),
             nn.Linear(hidden_dim * 2, hidden_dim),
             nn.SiLU(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.SiLU(),
-            nn.Linear(hidden_dim, action_dim)
+            nn.Linear(hidden_dim, action_dim),
         )
 
-    def _normalize_obs(self, obs: Tensor) -> Tensor:
-        """规范化obs形状为 [B, obs_dim]"""
-        if obs.dim() > 2:
-            obs = obs.reshape(obs.shape[0], -1)
-        elif obs.dim() < 2:
-            obs = obs.unsqueeze(0)
-        return obs
+    def _norm_obs(self, obs: Tensor) -> Tensor:
+        return obs.reshape(obs.shape[0], -1) if obs.dim() > 2 else (obs.unsqueeze(0) if obs.dim() == 1 else obs)
 
-    def _normalize_z(self, z: Tensor) -> Tensor:
-        """规范化z形状为 [B, pred_horizon, action_dim]"""
-        if z.dim() > 3:
-            z = z.view(-1, self.pred_horizon, self.action_dim)
-        elif z.dim() < 3:
-            if z.dim() == 2 and z.shape[1] == self.action_dim * self.pred_horizon:
-                z = z.view(-1, self.pred_horizon, self.action_dim)
-            else:
-                raise ValueError(f"Unexpected z shape: {z.shape}")
-        return z
-
-    def _normalize_time(self, time_tensor: Tensor, target_batch_size: int) -> Tensor:
-        """规范化时间张量 (t 或 r) 形状为 [B]"""
-        if time_tensor.dim() == 0:
-            time_tensor = time_tensor.unsqueeze(0).repeat(target_batch_size)
-        elif time_tensor.dim() == 1:
-            if time_tensor.shape[0] != target_batch_size:
-                if time_tensor.shape[0] == 1:
-                    time_tensor = time_tensor.repeat(target_batch_size)
-                else:
-                    # 截断或填充到目标大小
-                    if time_tensor.shape[0] > target_batch_size:
-                        time_tensor = time_tensor[:target_batch_size]
-                    else:
-                        pad = torch.zeros(target_batch_size - time_tensor.shape[0], device=time_tensor.device, dtype=time_tensor.dtype)
-                        time_tensor = torch.cat([time_tensor, pad])
-        elif time_tensor.dim() > 1:
-            time_tensor = time_tensor.view(-1)[:target_batch_size]
-        return time_tensor
-
-    def forward(self, obs: Tensor, z: Tensor, r: Tensor, t: Tensor) -> Tensor:
-        """
-        前向传播计算速度场
-
-        输入形状假设:
-            obs: [B, obs_dim] 或兼容形状 (自动规范化)
-            z: [B, pred_horizon, action_dim] 或兼容形状 (自动规范化)
-            r: [B] 或兼容形状 (自动规范化)
-            t: [B] 或兼容形状 (自动规范化)
-
-        返回:
-            速度场 [B, pred_horizon, action_dim]
-        """
-        obs = self._normalize_obs(obs)
-        z = self._normalize_z(z)
-
-        B, H, A = z.shape
-
-        t = self._normalize_time(t, B)
-        r = self._normalize_time(r, B)
-
-        t_emb = self.time_embed(t)
-        r_emb = self.time_embed(r)
-
-        obs_emb = self.obs_embed(obs)
-
-        noise_emb = self.noise_embed(z.reshape(B * H, A))
-        noise_emb = noise_emb.view(B, H, -1)
-
-        obs_emb = obs_emb.unsqueeze(1).repeat(1, H, 1)
-        t_emb = t_emb.unsqueeze(1).repeat(1, H, 1)
-        r_emb = r_emb.unsqueeze(1).repeat(1, H, 1)
-
-        combined = torch.cat([obs_emb, noise_emb, r_emb, t_emb], dim=-1)
-        return self.joint_processor(combined)
-
-
-class ImprovedMeanFlowPolicyAgent(nn.Module):
-    """改进的MeanFlow策略代理"""
-
-    def __init__(self, obs_dim: int, action_dim: int, config: Config):
-        super().__init__()
-        self.config = config
-        self.obs_dim = obs_dim
-        self.action_dim = action_dim
-        self.hidden_dim = config.hidden_dim
-        self.time_dim = config.time_dim
-        self.pred_horizon = config.pred_horizon
-        self.learning_rate = config.learning_rate
-        self.grad_clip_value = config.grad_clip_value
-
-        self.model = ImprovedMeanTimeConditionedFlowModel(
-            self.obs_dim, self.action_dim, self.hidden_dim, self.time_dim, self.pred_horizon
-        )
+    def _norm_z(self, z: Tensor) -> Tensor:
+        if z.dim() == 3: return z
+        if z.dim() == 2 and z.shape[1] == self.pred_horizon * self.action_dim:
+            return z.view(z.shape[0], self.pred_horizon, self.action_dim)
+        if z.dim() == 1:  # Added for single sample
+            return z.view(1, self.pred_horizon,
+                          self.action_dim) if z.numel() == self.pred_horizon * self.action_dim else z.view(1, 1,
+                                                                                                           self.action_dim)
+        raise ValueError(f"bad z shape: {z.shape}")
 
     @staticmethod
-    def sample_t_r(n_samples: int, device: str = 'cpu') -> Tuple[Tensor, Tensor]:
-        """采样时间点t和r"""
-        t = torch.rand(n_samples, device=device, dtype=torch.float32)
-        r = torch.rand(n_samples, device=device, dtype=torch.float32) * t
+    def _norm_time(t: Tensor, B: int) -> Tensor:
+        if t.dim() == 0: return t.new_full((B,), float(t))
+        if t.dim() == 1:
+            if t.numel() == B: return t
+            if t.numel() == 1: return t.repeat(B)
+            t = t.view(-1)
+            return t[:B] if t.numel() >= B else torch.cat([t, t.new_zeros(B - t.numel())], dim=0)
+        return t.view(-1)[:B]
+
+    def forward(self, obs: Tensor, z: Tensor, r: Tensor, t: Tensor) -> Tensor:
+        obs = self._norm_obs(obs)
+        z = self._norm_z(z)
+        B, H, A = z.shape
+        t = self._norm_time(t, B)
+        r = self._norm_time(r, B)
+
+        te = self.t_embed(t)  # [B, Td]
+        re = self.r_embed(r)  # [B, Td]
+        oe = self.obs_embed(obs)  # [B, Hd]
+
+        ne = self.noise_embed(z.reshape(B * H, A)).view(B, H, -1)  # [B,H,Hd]
+        te = te.unsqueeze(1).repeat(1, H, 1)
+        re = re.unsqueeze(1).repeat(1, H, 1)
+        oe = oe.unsqueeze(1).repeat(1, H, 1)
+        x = torch.cat([oe, ne, re, te], dim=-1)  # [B,H,*]
+        return self.net(x)  # [B,H,A]
+
+
+# ========= Actor (MeanFlow) =========
+class MeanFlowActor(nn.Module):
+    def __init__(self, obs_dim: int, action_dim: int, cfg: Config):
+        super().__init__()
+        self.cfg = cfg
+        self.pred_horizon = cfg.pred_horizon
+        self.action_dim = action_dim
+        self.model = MeanTimeCondFlow(obs_dim, action_dim, cfg.hidden_dim, cfg.time_dim, cfg.pred_horizon)
+
+    @staticmethod
+    def sample_t_r(n: int, device) -> Tuple[Tensor, Tensor]:
+        t = torch.rand(n, device=device)
+        r = torch.rand(n, device=device) * t
         return t, r
 
     @torch.no_grad()
     def predict_action_chunk(self, batch: Dict[str, Tensor], n_steps: int = 1) -> Tensor:
-        """预测动作块"""
         self.model.eval()
-        device = next(self.model.parameters()).device
-
-        observations = batch["observations"].to(device)
-        obs_cond = observations[:, -1, :]
-
-        noise = torch.randn(
-            observations.size(0),
-            self.pred_horizon,
-            self.action_dim,
-            dtype=torch.float32,
-            device=device
-        )
-
-        return self.sample_mean_flow(obs_cond, noise, n_steps=n_steps)
+        device = next(self.parameters()).device
+        obs = batch["observations"].to(device)  # [B, seq, obs_dim]
+        obs_cond = obs[:, -1, :]
+        x = torch.randn(obs.size(0), self.pred_horizon, self.action_dim, device=device)
+        return self.sample_mean_flow(obs_cond, x, n_steps=n_steps)
 
     @torch.no_grad()
     def select_action(self, batch: Dict[str, Tensor], n_steps: int = 1) -> Tensor:
-        """根据环境观测选择单个动作"""
-        action_chunk = self.predict_action_chunk(batch, n_steps=n_steps)
-        return action_chunk[:, 0, :]
+        return self.predict_action_chunk(batch, n_steps)[:, 0, :]
 
-    @torch.no_grad()
-    def sample_mean_flow(self, obs_cond: Tensor, noise: Tensor, n_steps: int = 1) -> Tensor:
-        """使用MeanFlow进行采样生成动作"""
-        device = next(self.model.parameters()).device
-        obs_cond, x = obs_cond.to(device), noise.to(device)
+    def sample_mean_flow(self, obs_cond: Tensor, x: Tensor, n_steps: int = 1) -> Tensor:
+        device = next(self.parameters()).device
+        obs_cond, x = obs_cond.to(device), x.to(device)
+        n_steps = max(1, int(n_steps))
         dt = 1.0 / n_steps
-
         for i in range(n_steps, 0, -1):
-            r = torch.full((x.shape[0],), (i - 1) * dt, device=device, dtype=torch.float32)
-            t = torch.full((x.shape[0],), i * dt, device=device, dtype=torch.float32)
-            velocity = self.model(obs_cond, x, r, t)
-            x = x - velocity * dt
-
+            r = torch.full((x.shape[0],), (i - 1) * dt, device=device)
+            t = torch.full((x.shape[0],), i * dt, device=device)
+            v = self.model(obs_cond, x, r, t)
+            x = x - v * dt
         return torch.clamp(x, -1, 1)
 
-    def forward(self, batch: Dict[str, Tensor]) -> Tensor:
-        """改进的前向传播，计算MeanFlow损失"""
-        device = next(self.model.parameters()).device
-        observations = batch["observations"].to(device)
-        actions = batch["actions"].to(device)
+    def flow_bc_loss(self, batch: Dict[str, Tensor]) -> Tensor:
+        """MeanFlow 训练损失（JVP 版）"""
+        device = next(self.parameters()).device
+        obs = batch["observations"].to(device)  # [B, seq, obs_dim]
+        act = batch["actions"].to(device)  # [B, H, A]
+        noise = torch.randn_like(act)
+        t, r = self.sample_t_r(act.shape[0], device=device)
+        z = (1 - t.view(-1, 1, 1)) * act + t.view(-1, 1, 1) * noise
+        obs_cond = obs[:, -1, :]
+        v = noise - act
 
-        noise = torch.randn_like(actions, device=device, dtype=torch.float32)
-        t, r = self.sample_t_r(actions.shape[0], device=device)
-
-        z = (1 - t.view(-1, 1, 1)) * actions + t.view(-1, 1, 1) * noise
-
-        obs_cond = observations[:, -1, :]
-        if obs_cond.dim() == 1:
-            obs_cond = obs_cond.unsqueeze(0)
-
-        v = noise - actions
-
-        # 确保输入张量需要梯度
         obs_cond = obs_cond.requires_grad_(True)
         z = z.requires_grad_(True)
         r = r.requires_grad_(True)
         t = t.requires_grad_(True)
 
-        # 计算Jacobian-Vector Product
-        u, dudt = jvp(
-            func=self.model,
-            inputs=(obs_cond, z, r, t),
-            v=(torch.zeros_like(obs_cond, requires_grad=False), v, torch.zeros_like(r, requires_grad=False), torch.ones_like(t, requires_grad=False)),
-            create_graph=True  # 保持梯度计算图以支持反向传播
-        )
+        v_obs = torch.zeros_like(obs_cond)
+        v_z = v
+        v_r = torch.zeros_like(r)
+        v_t = torch.ones_like(t)
 
-        # 计算目标速度场
-        delta_t = (t - r).unsqueeze(1).unsqueeze(1)
-        u_tgt = v - delta_t * dudt
-        u_tgt = u_tgt.detach()
+        u_pred, dudt = jvp(lambda *ins: self.model(*ins),
+                           (obs_cond, z, r, t),
+                           (v_obs, v_z, v_r, v_t),
+                           create_graph=True)
 
-        # 使用JVP的primal输出作为预测速度场
-        predicted_velocity = u
-
-        # 计算损失
-        loss = F.mse_loss(predicted_velocity, u_tgt)
-
-        return loss
+        delta = torch.clamp(t - r, min=1e-6).view(-1, 1, 1)  # Added epsilon for stability
+        u_tgt = (v - delta * dudt).detach()
+        return F.mse_loss(u_pred, u_tgt)
 
 
-class ConservativeMeanFQLModel(nn.Module):
-    """保守性MeanFQL模型，添加CQL正则化处理离线RL"""
-
-    def __init__(self, obs_dim: int, action_dim: int, config: Config):
+# ========= Whole RL model (Actor + Double Q + target) =========
+class ConservativeMeanFQL(nn.Module):
+    def __init__(self, obs_dim: int, action_dim: int, cfg: Config):
         super().__init__()
-        self.actor = ImprovedMeanFlowPolicyAgent(obs_dim, action_dim, config)
-        self.critic = DoubleCriticObsAct(obs_dim, action_dim, config.hidden_dim, config.pred_horizon)
-
-
+        self.cfg = cfg
+        self.actor = MeanFlowActor(obs_dim, action_dim, cfg)
+        self.critic = DoubleCriticObsAct(obs_dim, action_dim, cfg.hidden_dim, cfg.pred_horizon)
         self.target_critic = copy.deepcopy(self.critic)
-        self.config = config
-        self.device = torch.device(config.device)
+        for p in self.target_critic.parameters():
+            p.requires_grad = False
 
-        self.critic_optimizer = torch.optim.Adam(
-            self.critic.parameters(),
-            lr=config.learning_rate
-        )
-        self.actor_optimizer = torch.optim.Adam(
-            self.actor.parameters(),
-            lr=config.learning_rate
-        )
-
-        self.to(self.device)
-
-    def to(self, device):
-        """重写to方法以确保所有组件都移动到设备"""
-        super().to(device)
-        self.actor.to(device)
-        self.critic.to(device)
-        self.target_critic.to(device)
-        return self
-
-    def forward(self, cond: Dict[str, Tensor]) -> Tensor:
-        """前向传播，生成动作"""
-        return self.actor.predict_action_chunk(cond, n_steps=self.config.inference_steps)
-
-    def _compute_discounted_rewards(self, rewards: Tensor, gamma: float) -> Tensor:
-        """计算折扣奖励总和"""
-        if rewards.dim() > 2:
-            rewards = rewards.view(rewards.shape[0], -1)
-
-        h = min(self.actor.pred_horizon, rewards.shape[1])
-        batch_size = rewards.shape[0]
-
-        step_indices = torch.arange(h, device=rewards.device, dtype=torch.float32)
-        discount_factors = gamma ** step_indices
-        discount_factors = discount_factors.unsqueeze(0)
-
-        discounted_sum = torch.sum(
-            discount_factors * rewards[:, :h],
-            dim=1
-        )
-        return discounted_sum
+    @staticmethod
+    def discounted_returns(rewards: Tensor, gamma: float) -> Tensor:
+        # rewards: [B,H] or [B,H,1]
+        if rewards.dim() == 3 and rewards.shape[-1] == 1:
+            rewards = rewards.squeeze(-1)
+        if rewards.dim() != 2:
+            raise ValueError("rewards must be 2D [B,H] or [B,H,1]")
+        B, H = rewards.shape
+        factors = (gamma ** torch.arange(H, device=rewards.device, dtype=rewards.dtype)).unsqueeze(0)
+        return torch.sum(rewards * factors, dim=1)  # [B]
 
     def loss_critic(self, obs: Tensor, actions: Tensor, next_obs: Tensor,
                     rewards: Tensor, terminated: Tensor, gamma: float) -> Tuple[Tensor, Dict]:
-        """计算critic损失，添加CQL正则化"""
-        batch_size = obs.shape[0]
-
+        B = obs.shape[0]
         with torch.no_grad():
-            batch = {
-                "observations": next_obs,
-                "actions": actions,  # 占位
-            }
-            next_actions = self.actor.predict_action_chunk(batch)
-            next_actions = torch.clamp(next_actions, -1, 1)
-
+            batch_next = {"observations": next_obs,
+                          "actions": actions}  # Note: actions not used here, but kept for consistency
+            next_actions = self.actor.predict_action_chunk(batch_next, n_steps=self.cfg.inference_steps)
             next_q1, next_q2 = self.target_critic(next_obs, next_actions)
-            next_q = torch.min(next_q1, next_q2).view(batch_size)
+            next_q = torch.min(next_q1, next_q2).view(B)
 
-            discounted_rewards = self._compute_discounted_rewards(rewards, gamma)
+            ret = self.discounted_returns(rewards, gamma)  # [B]
+            term = terminated.view(-1).float()  # Robust flatten
+            bootstrap = (1.0 - term) * (gamma ** self.cfg.pred_horizon) * next_q
+            target = ret + bootstrap  # [B]
 
-            terminated = terminated.view(batch_size)
+        q1, q2 = self.critic(obs, actions)  # [B,1]
+        td_loss = F.mse_loss(q1, target.view(B, 1)) + F.mse_loss(q2, target.view(B, 1))
 
-            future_q = (1 - terminated.float()) * (gamma ** self.actor.pred_horizon) * next_q
+        # CQL regularizer
+        num_samples = self.cfg.cql_num_samples
+        obs_cond = obs[:, -1, :]
+        rep_obs_cond = obs_cond.repeat_interleave(num_samples, dim=0)
+        noise = torch.randn(B * num_samples, self.cfg.pred_horizon, self.actor.action_dim, device=obs.device)
+        sampled_actions = self.actor.sample_mean_flow(rep_obs_cond, noise,
+                                                      n_steps=self.cfg.inference_steps)  # Use config steps
 
-            target = discounted_rewards + future_q
+        rep_obs = obs.repeat_interleave(num_samples, dim=0)
+        q1s, q2s = self.critic(rep_obs, sampled_actions)
+        q1s = q1s.view(B, num_samples)
+        q2s = q2s.view(B, num_samples)
+        temp = self.cfg.cql_temp
+        cql1 = torch.logsumexp(q1s / temp, dim=1).mean() * temp - q1.mean()
+        cql2 = torch.logsumexp(q2s / temp, dim=1).mean() * temp - q2.mean()
+        cql = (cql1 + cql2) * self.cfg.cql_alpha
 
-        q1, q2 = self.critic(obs, actions)
+        total = td_loss + cql
+        info = dict(td_loss=td_loss.item(), cql_loss=cql.item(), total_critic_loss=total.item(),
+                    q1_mean=q1.mean().item(), q2_mean=q2.mean().item(), target_mean=target.mean().item())
+        return total, info
 
-        target = target.view(batch_size, 1)
-
-        td_loss = F.mse_loss(q1, target) + F.mse_loss(q2, target)
-
-        # CQL保守性正则化
-        num_action_samples = 10
-        with torch.no_grad():
-            obs_cond = obs[:, -1, :]
-            repeated_obs_cond = obs_cond.repeat_interleave(num_action_samples, dim=0)
-            sampled_noise = torch.randn(
-                batch_size * num_action_samples, self.actor.pred_horizon, self.actor.action_dim,
-                device=self.device, dtype=torch.float32
-            )
-            sampled_actions = self.actor.sample_mean_flow(
-                repeated_obs_cond, sampled_noise, n_steps=10
-            )
-
-        repeated_obs = obs.repeat_interleave(num_action_samples, dim=0)
-        q1_sampled, q2_sampled = self.critic(repeated_obs, sampled_actions)
-        q1_sampled = q1_sampled.view(batch_size, num_action_samples)
-        q2_sampled = q2_sampled.view(batch_size, num_action_samples)
-
-        cql_loss1 = torch.logsumexp(q1_sampled / self.config.cql_temp, dim=1).mean() * self.config.cql_temp - q1.mean()
-        cql_loss2 = torch.logsumexp(q2_sampled / self.config.cql_temp, dim=1).mean() * self.config.cql_temp - q2.mean()
-        cql_loss = (cql_loss1 + cql_loss2) * self.config.cql_alpha
-
-        total_loss = td_loss + cql_loss
-
-        loss_critic_info = {
-            'td_loss': td_loss.item(),
-            'cql_loss': cql_loss.item(),
-            'total_critic_loss': total_loss.item(),
-            'q1_mean': q1.mean().item(),
-            'q2_mean': q2.mean().item(),
-            'target_mean': target.mean().item(),
-        }
-
-        return total_loss, loss_critic_info
-
-    def loss_actor(self, obs: Tensor, action_batch: Tensor, alpha: float = 1.0) -> Tuple[Tensor, Dict]:
-        """计算actor损失"""
+    def loss_actor(self, obs: Tensor, action_batch: Tensor) -> Tuple[Tensor, Dict]:
         batch = {"observations": obs, "actions": action_batch}
-        actor_actions = self.actor.predict_action_chunk(batch)
+        bc = self.actor.flow_bc_loss(batch)
+        # Q guidance
+        actor_actions = self.actor.predict_action_chunk(batch, n_steps=self.cfg.inference_steps)
         q1, q2 = self.critic(obs, actor_actions)
         q = torch.min(q1, q2)
-
         q_loss = -q.mean()
-        if self.config.normalize_q_loss:
-            lam = 1 / torch.abs(q).mean().detach()
-            q_loss = lam * q_loss
+        if self.cfg.normalize_q_loss:
+            q_loss = q_loss * (1.0 / (torch.abs(q).mean().detach() + 1e-8))
+        loss = bc + q_loss
+        info = dict(loss_actor=loss.item(), loss_bc_flow=bc.item(), q_loss=q_loss.item(), q_mean=q.mean().item())
+        return loss, info
 
-        loss_bc_flow = self.actor(batch)
-        loss_actor = loss_bc_flow + alpha * q_loss
-
-        loss_actor_info = {
-            'loss_actor': loss_actor.item(),
-            'loss_bc_flow': loss_bc_flow.item(),
-            'q_loss': q_loss.item(),
-            'q_mean': q.mean().item(),
-        }
-
-        return loss_actor, loss_actor_info
-
-    def update_target_critic(self, tau: float):
-        """更新目标critic网络"""
-        for target_param, source_param in zip(self.target_critic.parameters(), self.critic.parameters()):
-            target_param.data.copy_(
-                source_param.data * tau + target_param.data * (1.0 - tau)
-            )
+    def update_target(self, tau: float):
+        for tp, p in zip(self.target_critic.parameters(), self.critic.parameters()):
+            tp.data.copy_(tp.data * (1 - tau) + p.data * tau)
 
 
+# ========= Dataset / DataModule =========
 class ReplayBuffer(Dataset):
-    """简单的经验回放缓冲区"""
-
-    def __init__(self, capacity: int = 1000000):
+    def __init__(self, capacity=100000):
+        self.buf: List[Dict[str, np.ndarray]] = []
         self.capacity = capacity
-        self.buffer = []
-        self.position = 0
+        self.idx = 0
 
-    def add(self, transition: Dict[str, np.ndarray]):
-        """添加转换到缓冲区"""
-        if len(self.buffer) < self.capacity:
-            self.buffer.append(transition)
+    def add(self, item: Dict[str, np.ndarray]):
+        if len(self.buf) < self.capacity:
+            self.buf.append(item)
         else:
-            self.buffer[self.position] = transition
-        self.position = (self.position + 1) % self.capacity
-
-    def add_batch(self, transitions: List[Dict[str, np.ndarray]]):
-        """批量添加转换"""
-        for transition in transitions:
-            self.add(transition)
+            self.buf[self.idx] = item
+        self.idx = (self.idx + 1) % self.capacity
 
     def __len__(self):
-        return len(self.buffer)
+        return len(self.buf)
 
-    def __getitem__(self, idx):
-        return self.buffer[idx]
-
-    def sample(self, batch_size: int) -> Dict[str, torch.Tensor]:
-        """随机采样一批数据"""
-        indices = np.random.randint(0, len(self.buffer), batch_size)
-        samples = [self.buffer[i] for i in indices]
-
-        batch = {}
-        for key in samples[0].keys():
-            np_array = np.stack([s[key] for s in samples])
-            if np_array.dtype != np.float32:
-                np_array = np_array.astype(np.float32)
-            batch[key] = torch.from_numpy(np_array)
-
-        return batch
+    def __getitem__(self, i):
+        return self.buf[i]
 
 
-def train_offline_rl(
-        model: ConservativeMeanFQLModel,
-        dataloader: DataLoader,
-        num_epochs: int,
-        config: Config
-) -> Dict[str, List[float]]:
-    """完整的离线强化学习训练循环"""
-    device = model.device
-    metrics = defaultdict(list)
+class ReplayDM(L.LightningDataModule):
+    def __init__(self, train_buffer: ReplayBuffer, val_buffer: ReplayBuffer, cfg: Config):
+        super().__init__()
+        self.train_buffer = train_buffer
+        self.val_buffer = val_buffer
+        self.cfg = cfg
 
-    for epoch in range(num_epochs):
-        epoch_metrics = defaultdict(float)
-        num_batches = 0
+    def train_dataloader(self):
+        return DataLoader(self.train_buffer, batch_size=self.cfg.batch_size, shuffle=True,
+                          num_workers=self.cfg.num_workers, pin_memory=True, persistent_workers=True, prefetch_factor=2)
 
-        for batch in dataloader:
-            obs = batch["observations"].to(device)
-            actions = batch["actions"].to(device).squeeze(1)
-            next_obs = batch["next_observations"].to(device)
-            rewards = batch["rewards"].to(device).squeeze(1)
-            terminated = batch["terminated"].to(device).squeeze()
-
-            critic_loss, critic_info = model.loss_critic(
-                obs, actions, next_obs, rewards, terminated, config.gamma
-            )
-
-            model.critic_optimizer.zero_grad()
-            critic_loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.critic.parameters(), max_norm=config.grad_clip_value)
-            model.critic_optimizer.step()
-
-            if num_batches % 2 == 0:
-                actor_loss, actor_info = model.loss_actor(obs, actions, alpha=1.0)
-
-                model.actor_optimizer.zero_grad()
-                actor_loss.backward()
-                torch.nn.utils.clip_grad_norm_(model.actor.model.parameters(), max_norm=config.grad_clip_value)
-                model.actor_optimizer.step()
-
-                for k, v in actor_info.items():
-                    epoch_metrics[k] += v
-
-            model.update_target_critic(config.tau)
-
-            for k, v in critic_info.items():
-                epoch_metrics[k] += v
-
-            num_batches += 1
-
-        for k in epoch_metrics:
-            epoch_metrics[k] /= num_batches
-            metrics[k].append(epoch_metrics[k])
-
-        if epoch % 10 == 0:
-            print(f"Epoch {epoch}:")
-            for k, v in epoch_metrics.items():
-                print(f"  {k}: {v:.4f}")
-
-    return metrics
+    def val_dataloader(self):
+        return DataLoader(self.val_buffer, batch_size=self.cfg.batch_size, shuffle=False,
+                          num_workers=self.cfg.num_workers, pin_memory=True, persistent_workers=True, prefetch_factor=2)
 
 
-# 示例使用代码
+# ========= LightningModule (Auto-optim, official style) =========
+class LitConservativeMeanFQL(L.LightningModule):
+    def __init__(self, obs_dim: int, action_dim: int, cfg: Config):
+        super().__init__()
+        self.save_hyperparameters()
+        self.cfg = cfg
+        self.net = ConservativeMeanFQL(obs_dim, action_dim, cfg)
+        # 禁用自动优化，因为我们使用多个优化器和频率控制
+        self.automatic_optimization = False
+
+    def forward(self, batch: Dict[str, Tensor]) -> Tensor:
+        return self.net.actor.predict_action_chunk(batch, n_steps=self.cfg.inference_steps)
+
+    def training_step(self, batch: Dict[str, Tensor], batch_idx: int):
+        device = self.device  # Use self.device for consistency
+        obs = batch["observations"].float().to(device)
+        actions = batch["actions"].float().to(device)
+        next_obs = batch["next_observations"].float().to(device)
+        rewards = batch["rewards"].float().to(device)
+        terminated = batch["terminated"].float().to(device)
+
+        # 获取优化器
+        opt_c, opt_a = self.optimizers()
+
+        # Critic step
+        self.toggle_optimizer(opt_c)
+        loss_c, info_c = self.net.loss_critic(obs, actions, next_obs, rewards, terminated, self.cfg.gamma)
+        self.log("critic/loss", loss_c, on_step=True, prog_bar=True)
+        for k, v in info_c.items():
+            self.log(f"critic/{k}", v, on_step=True)
+        opt_c.zero_grad()
+        self.manual_backward(loss_c)
+        if self.cfg.grad_clip_value:
+            self.clip_gradients(opt_c, gradient_clip_val=self.cfg.grad_clip_value, gradient_clip_algorithm="norm")
+        opt_c.step()
+        self.untoggle_optimizer(opt_c)
+
+        # Actor step - 控制 actor 更新频率：仅每 N 个 batch 更新
+        if (batch_idx % self.cfg.actor_update_freq) == 0:
+            self.toggle_optimizer(opt_a)
+            loss_a, info_a = self.net.loss_actor(obs, actions)
+            self.log("actor/loss", loss_a, on_step=True, prog_bar=True)
+            for k, v in info_a.items():
+                self.log(f"actor/{k}", v, on_step=True)
+            opt_a.zero_grad()
+            self.manual_backward(loss_a)
+            if self.cfg.grad_clip_value:
+                self.clip_gradients(opt_a, gradient_clip_val=self.cfg.grad_clip_value, gradient_clip_algorithm="norm")
+            opt_a.step()
+            self.untoggle_optimizer(opt_a)
+
+        return {"loss": loss_c}  # Optional, for compatibility
+
+    def validation_step(self, batch: Dict[str, Tensor], batch_idx: int):
+        device = self.device
+        obs = batch["observations"].float().to(device)
+        actions = batch["actions"].float().to(device)
+        next_obs = batch["next_observations"].float().to(device)
+        rewards = batch["rewards"].float().to(device)
+        terminated = batch["terminated"].float().to(device)
+
+        # 评估critic loss
+        val_loss, info = self.net.loss_critic(obs, actions, next_obs, rewards, terminated, self.cfg.gamma)
+        self.log("val/critic_loss", val_loss, on_step=False, on_epoch=True, prog_bar=True)
+
+        # 评估actor loss
+        val_actor_loss, actor_info = self.net.loss_actor(obs, actions)
+        self.log("val/actor_loss", val_actor_loss, on_step=False, on_epoch=True, prog_bar=True)
+
+        # 记录其他指标
+        for k, v in info.items():
+            self.log(f"val/critic_{k}", v, on_step=False, on_epoch=True)
+        for k, v in actor_info.items():
+            self.log(f"val/actor_{k}", v, on_step=False, on_epoch=True)
+
+        return val_loss
+
+    def test_step(self, batch: Dict[str, Tensor], batch_idx: int):
+        predicted_actions = self(batch)
+        actual_actions = batch["actions"].float()
+        action_mse = F.mse_loss(predicted_actions, actual_actions)
+        self.log("test/action_mse", action_mse, on_step=False, on_epoch=True)
+        return action_mse
+
+    def on_train_batch_end(self, outputs, batch, batch_idx):
+        # 目标网络软更新（按频率）
+        if (batch_idx % self.cfg.target_update_freq) == 0:
+            self.net.update_target(self.cfg.tau)
+
+    def configure_optimizers(self):
+        opt_c = optim.Adam(self.net.critic.parameters(), lr=self.cfg.learning_rate)
+        opt_a = optim.Adam(self.net.actor.parameters(), lr=self.cfg.learning_rate)
+        sched_c = optim.lr_scheduler.StepLR(opt_c, step_size=10, gamma=0.1)
+        sched_a = optim.lr_scheduler.StepLR(opt_a, step_size=10, gamma=0.1)
+        return (
+            {"optimizer": opt_c, "lr_scheduler": {"scheduler": sched_c, "interval": "epoch"}},
+            {"optimizer": opt_a, "lr_scheduler": {"scheduler": sched_a, "interval": "epoch"}},
+        )
+
+
+# ========= Demo main (合成数据) =========
+def build_train_val_buffers(cfg: Config, obs_dim=10, action_dim=4, seq_len=1):
+    """构建训练和验证缓冲区"""
+    H = cfg.pred_horizon
+    # 创建独立的训练和验证缓冲区
+    train_buf = ReplayBuffer(1600)  # 80% 数据用于训练
+    val_buf = ReplayBuffer(400)  # 20% 数据用于验证
+
+    # 填充训练数据
+    for _ in range(800):
+        item = {
+            "observations": np.random.randn(seq_len, obs_dim).astype(np.float32),
+            "actions": np.random.randn(H, action_dim).astype(np.float32),
+            "next_observations": np.random.randn(seq_len, obs_dim).astype(np.float32),
+            "rewards": np.random.randn(H).astype(np.float32),
+            "terminated": np.random.choice([0.0, 1.0], size=(1,)).astype(np.float32),
+        }
+        train_buf.add(item)
+
+    # 填充验证数据
+    for _ in range(200):
+        item = {
+            "observations": np.random.randn(seq_len, obs_dim).astype(np.float32),
+            "actions": np.random.randn(H, action_dim).astype(np.float32),
+            "next_observations": np.random.randn(seq_len, obs_dim).astype(np.float32),
+            "rewards": np.random.randn(H).astype(np.float32),
+            "terminated": np.random.choice([0.0, 1.0], size=(1,)).astype(np.float32),
+        }
+        val_buf.add(item)
+
+    return train_buf, val_buf
+
+
 def main():
-    """示例主函数，展示如何使用这些类"""
-    config = Config()
+    cfg = Config()
+    obs_dim, action_dim = 10, 4
+    # 构建独立的训练和验证缓冲区
+    train_buffer, val_buffer = build_train_val_buffers(cfg, obs_dim, action_dim, seq_len=1)
 
-    obs_dim = 10
-    action_dim = 4
-    action_horizon = 5
+    dm = ReplayDM(train_buffer, val_buffer, cfg)
 
+    model = LitConservativeMeanFQL(obs_dim, action_dim, cfg)
 
-    model = ConservativeMeanFQLModel(
-        obs_dim=obs_dim,
-        action_dim=action_dim,
-        config=config
+    # 创建回调函数
+    from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
+    checkpoint_callback = ModelCheckpoint(
+        monitor='val/critic_loss',
+        dirpath='checkpoints/meanflow_ql',
+        filename='meanflow-ql-{epoch:02d}-{val/critic_loss:.2f}',
+        save_top_k=3,
+        mode='min',
+    )
+    early_stop = EarlyStopping(monitor="val/critic_loss", patience=5, mode="min")
+
+    trainer = L.Trainer(
+        max_epochs=20,
+        limit_train_batches=100,
+        limit_val_batches=20,
+        log_every_n_steps=10,
+        accelerator="auto",
+        devices="auto",
+        enable_progress_bar=True,
+        callbacks=[checkpoint_callback, early_stop],
+        precision="32-true",  # Changed from "16-mixed" to "32-true" to avoid model summary warning
     )
 
-    buffer = ReplayBuffer(capacity=1000)
+    # 训练模型
+    trainer.fit(model=model, datamodule=dm)
 
-    for _ in range(1000):
-        transition = {
-            "observations": np.random.randn(1, obs_dim).astype(np.float32),
-            "actions": np.random.randn(1, action_horizon, action_dim).astype(np.float32),
-            "next_observations": np.random.randn(1, obs_dim).astype(np.float32),
-            "rewards": np.random.randn(1, action_horizon).astype(np.float32),
-            "terminated": np.random.choice([0, 1], size=(1, 1)).astype(np.float32)
-        }
-        buffer.add(transition)
-
-    dataloader = DataLoader(buffer, batch_size=32, shuffle=True)
-
-    metrics = train_offline_rl(model, dataloader, num_epochs=100, config=config)
-
-    print("训练完成!")
-    return metrics
+    # 测试模型
+    print("\nTesting the trained model:")
+    trainer.test(model, dataloaders=dm.val_dataloader())
 
 
 if __name__ == "__main__":
