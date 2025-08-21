@@ -24,6 +24,7 @@ class Config:
     action_horizon: int = 32
     inference_steps: int = 1
     window_stride: int = 1  # 滑动窗口步长
+    
     # 模型参数
     time_dim: int = 32
     hidden_dim: int = 256
@@ -42,9 +43,10 @@ class Config:
     # Accelerator相关参数
     mixed_precision: str = "no"
     gradient_accumulation_steps: int = 1
-    num_workers: int = 4  # 增加num_workers以提高数据加载性能
+    num_workers: int = 0  # Windows上设置为0避免多进程问题
 
 
+    # 强化学习参数（需要有默认值）
     grad_clip_value: float = 1.0
     cql_alpha: float = 1.0
     cql_temp: float = 1.0

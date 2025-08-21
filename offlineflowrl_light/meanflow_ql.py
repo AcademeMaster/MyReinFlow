@@ -197,7 +197,7 @@ class MeanFlowActor(nn.Module):
         r = torch.rand(n, device=device) * t
         return t, r
 
-    @torch.no_grad()
+
     def predict_action_chunk(self, batch: Dict[str, Tensor], n_steps: int = 1) -> Tensor:
         self.model.eval()
         device = next(self.parameters()).device
@@ -206,7 +206,7 @@ class MeanFlowActor(nn.Module):
         x = torch.randn(obs.size(0), self.pred_horizon, self.action_dim, device=device)
         return self.sample_mean_flow(obs_cond, x, n_steps=n_steps)
 
-    @torch.no_grad()
+
     def select_action(self, obs: Tensor, n_steps: int = 1) -> Tensor:
         """
         为推理选择动作，内部维护观测历史
@@ -223,10 +223,10 @@ class MeanFlowActor(nn.Module):
             
         # 更新观测历史 - 添加当前观测到历史中
         for i in range(obs.shape[0]):  # 对于每个样本
-            self.obs_history.append(obs[i])
+            self.obs_history.append(obs[i].cpu())  # 存储到CPU以避免设备问题
         
         # 构建观测序列
-        obs_sequence = torch.stack(list(self.obs_history)).unsqueeze(0)  # [1, obs_horizon, obs_dim]
+        obs_sequence = torch.stack(list(self.obs_history)).unsqueeze(0).to(device)  # [1, obs_horizon, obs_dim]
         if obs.shape[0] > 1:
             # 对于多个样本，复制观测序列
             obs_sequence = obs_sequence.repeat(obs.shape[0], 1, 1)  # [B, obs_horizon, obs_dim]
@@ -239,9 +239,18 @@ class MeanFlowActor(nn.Module):
         return action_chunk[:, 0, :]
 
     def sample_mean_flow(self, obs_cond: Tensor, x: Tensor, n_steps: int = 1) -> Tensor:
+        """使用改进的观测序列处理和时间步进的均值流采样"""
         device = next(self.parameters()).device
         obs_cond, x = obs_cond.to(device), x.to(device)
+        
+        # 确保观测序列的形状正确
+        if obs_cond.dim() == 2:  # 如果是展平的观测序列
+            obs_horizon = obs_cond.shape[1] // self.obs_dim
+            obs_cond = obs_cond.view(obs_cond.shape[0], obs_horizon, self.obs_dim)
+        
         n_steps = max(1, int(n_steps))
+
+
         dt = 1.0 / n_steps
         for i in range(n_steps, 0, -1):
             r = torch.full((x.shape[0],), (i - 1) * dt, device=device)
@@ -291,6 +300,10 @@ class ConservativeMeanFQL(nn.Module):
         self.target_critic = copy.deepcopy(self.critic)
         for p in self.target_critic.parameters():
             p.requires_grad = False
+        
+        # 初始化损失统计
+        self._td_loss_stats = 1.0
+        self._cql_loss_stats = 1.0
 
     @staticmethod
     def discounted_returns(rewards: Tensor, gamma: float) -> Tensor:
@@ -361,10 +374,31 @@ class ConservativeMeanFQL(nn.Module):
         cql2 = torch.logsumexp(q2s / temp, dim=1).mean() * temp - q2.mean()
         cql = (cql1 + cql2) * self.cfg.cql_alpha
 
-        total = td_loss + cql
-        info = dict(td_loss=td_loss.item(), cql_loss=cql.item(), total_critic_loss=total.item(),
+        # 损失归一化以平衡TD loss和CQL loss
+        # 通过动态缩放确保两个损失在相同数量级上
+        td_loss_normalized = td_loss
+        cql_normalized = cql
+        
+        # 如果需要归一化，可以根据历史统计或当前批次进行调整
+        if hasattr(self, '_td_loss_stats') and hasattr(self, '_cql_loss_stats'):
+            # 使用指数移动平均来跟踪损失统计
+            self._td_loss_stats = 0.9 * self._td_loss_stats + 0.1 * td_loss.item()
+            self._cql_loss_stats = 0.9 * self._cql_loss_stats + 0.1 * cql.item()
+        else:
+            # 初始化损失统计
+            self._td_loss_stats = td_loss.item()
+            self._cql_loss_stats = cql.item()
+        
+        # 根据损失统计进行归一化
+        if self._cql_loss_stats > 1e-8:  # 避免除零
+            cql_scale = self._td_loss_stats / self._cql_loss_stats
+            cql_normalized = cql * cql_scale
+        
+        total = td_loss_normalized + cql_normalized
+        info = dict(td_loss=td_loss_normalized.item(), cql_loss=cql_normalized.item(), total_critic_loss=total.item(),
                     q1_mean=q1.mean().item(), q2_mean=q2.mean().item(), target_mean=target.mean().item(),
-                    cql1=cql1.item(), cql2=cql2.item())
+                    cql1=cql1.item(), cql2=cql2.item(), 
+                    td_loss_raw=td_loss.item(), cql_loss_raw=cql.item())
         return total, info
 
     def loss_actor(self, obs: Tensor, action_batch: Tensor) -> Tuple[Tensor, Dict]:

@@ -13,7 +13,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 
 # 本地模块导入
 from config import Config
-from dataset import MinariDataModule
+from dataset import MinariDataModule, SlidingWindowDataset
 from meanflow_ql import LitConservativeMeanFQL
 
 
@@ -59,9 +59,17 @@ def evaluate_online(model: LitConservativeMeanFQL, config: Config, render_mode: 
 
             # Denormalize if needed
             if config.normalize_data:
-                # 创建临时数据集以获取统计信息
-                dummy_dataset = SlidingWindowDataset([minari_dataset], config)
-                action = dummy_dataset.denormalize(action, dummy_dataset.stats["actions"])
+                # 直接使用minari数据集计算统计信息，避免创建SlidingWindowDataset
+                all_actions = []
+                for episode in minari_dataset.iterate_episodes():
+                    all_actions.append(episode.actions)
+                all_actions = np.concatenate(all_actions, axis=0)
+                action_stats = {
+                    "mean": all_actions.mean(axis=0),
+                    "std": all_actions.std(axis=0) + 1e-8
+                }
+                # 反归一化动作
+                action = action * action_stats["std"] + action_stats["mean"]
 
             next_obs, reward, terminated, truncated, _ = eval_env.step(action)
             episode_reward += reward
@@ -73,7 +81,8 @@ def evaluate_online(model: LitConservativeMeanFQL, config: Config, render_mode: 
         print(f"Episode {ep + 1}: Reward = {episode_reward}")
 
     avg_reward = np.mean(total_rewards)
-    print(f"Average Reward over {config.test_episodes} episodes: {avg_reward}")
+    std_reward = np.std(total_rewards) if len(total_rewards) > 1 else 0.0
+    print(f"Average Reward over {config.test_episodes} episodes: {avg_reward:.2f} ± {std_reward:.2f}")
     eval_env.close()
     return avg_reward
 
@@ -81,23 +90,26 @@ def evaluate_online(model: LitConservativeMeanFQL, config: Config, render_mode: 
 def main():
     # 解析命令行参数
     parser = argparse.ArgumentParser(description="基于流匹配的机器人操作训练")
-    parser.add_argument("mode", choices=["train", "test"],
+    parser.add_argument("mode", nargs='?', default="train", choices=["train", "test"],
                         help="运行模式: train 或 test")
     parser.add_argument("--dataset", default="mujoco/pusher/expert-v0", help="Minari数据集名称")
     parser.add_argument("--epochs", type=int, default=100, help="训练轮数")
-    parser.add_argument("--batch-size", type=int, default=4096, help="批量大小")
+    parser.add_argument("--batch-size", type=int, default=2048, help="批量大小")
     parser.add_argument("--checkpoint", help="测试时使用的模型路径")
-    parser.add_argument("--test-episodes", type=int, default=20, help="测试轮数")
+    parser.add_argument("--test-episodes", type=int, default=5, help="测试轮数")
     parser.add_argument("--learning-rate", type=float, default=1e-4, help="学习率")
     parser.add_argument("--normalize", action="store_true", default=True, help="启用数据归一化")
     parser.add_argument("--no-normalize", dest="normalize", action="store_false", help="禁用数据归一化")
-    parser.add_argument("--render", choices=["none", "human", "rgb_array"], default="human",
-                        help="测试时的渲染模式 (默认: human)")
+    parser.add_argument("--render", choices=["none", "human", "rgb_array"], default="none",
+                        help="测试时的渲染模式 (默认: none)")
     # Accelerator相关参数
-    parser.add_argument("--mixed-precision", type=str, choices=["32-true", "16-mixed", "bf16-mixed"], default="32-true",
+    parser.add_argument("--mixed-precision", type=str, choices=["32-true", "16-mixed", "bf16-mixed"], default="32",
                         help="混合精度训练 (32-true, 16-mixed 或 bf16-mixed)")
     parser.add_argument("--gradient-accumulation-steps", type=int, default=1,
                         help="梯度累积步数")
+    # 在线评估开关
+    parser.add_argument("--skip-online-eval", action="store_true", default=True,
+                        help="跳过在线评估")
     args = parser.parse_args()
 
     # 初始化配置
@@ -128,6 +140,9 @@ def main():
     config.action_dim = action_dim
 
     dm = MinariDataModule(config)
+    # 确保在测试模式下也调用setup方法
+    if args.mode == "test":
+        dm.setup()
 
     model = LitConservativeMeanFQL(obs_dim, action_dim, config)
 
@@ -135,7 +150,7 @@ def main():
     checkpoint_callback = ModelCheckpoint(
         monitor='val/critic_loss',
         dirpath='checkpoints/meanflow_ql',
-        filename='meanflow-ql-{epoch:02d}-{val/critic_loss:.2f}',
+        filename='meanflow_ql-epoch{epoch:02d}-val_critic_loss{val/critic_loss:.2f}',
         save_top_k=3,
         mode='min',
     )
@@ -168,8 +183,11 @@ def main():
         trainer.test(model, dataloaders=dm.val_dataloader())
 
         # Online evaluation
-        print("\nOnline Evaluation:")
-        evaluate_online(model, config, render_mode=args.render)
+        if not args.skip_online_eval:
+            print("\nOnline Evaluation:")
+            evaluate_online(model, config, render_mode=args.render)
+        else:
+            print("\nSkipping online evaluation as requested.")
 
 
 if __name__ == "__main__":
