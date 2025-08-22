@@ -34,7 +34,7 @@ class SlidingWindowDataset(Dataset):
         for episode_idx, episode in enumerate(self.episode_data):
             episode_length = len(episode.observations)
             # 确保窗口不会超出序列边界
-            for start in range(0, episode_length - self.config.obs_horizon - self.config.pred_horizon + 1, 
+            for start in range(0, episode_length  - self.config.pred_horizon,
                               self.config.window_stride):
                 self.window_indices.append((episode_idx, start))
 
@@ -49,11 +49,11 @@ class SlidingWindowDataset(Dataset):
         episode_idx, start = self.window_indices[idx]
         episode = self.episode_data[episode_idx]
         
-        # 提取观测序列 [obs_horizon, obs_dim]
-        obs_seq = episode.observations[start:start + self.config.obs_horizon]
+        # 提取当前观测 [obs_dim]
+        current_obs = episode.observations[start]
         
-        # 提取未来观测序列 [obs_horizon, obs_dim]
-        future_obs_seq = episode.observations[start + 1:start + self.config.obs_horizon + 1]
+        # 提取下一个观测 [obs_dim]
+        next_obs = episode.observations[start + 1] if start + 1 < len(episode.observations) else episode.observations[start]
         
         # 提取动作序列 [pred_horizon, action_dim]
         action_seq = episode.actions[start:start + self.config.pred_horizon]
@@ -61,19 +61,16 @@ class SlidingWindowDataset(Dataset):
         # 提取奖励序列 [pred_horizon, 1]
         reward_seq = episode.rewards[start:start + self.config.pred_horizon].reshape(-1, 1)
         
-        # 只取动作序列最后一个时间步的终止标志 [1, 1]
+        # 只取动作序列最后一个时间步的终止标志 [1]
         terminated = episode.terminations[start + self.config.pred_horizon - 1] if \
             start + self.config.pred_horizon - 1 < len(episode.terminations) else True
 
         # 计算有效长度
         valid_length = min(self.config.pred_horizon, len(episode.rewards) - start)
         
-
-            
-            
         return {
-            "observations": obs_seq.astype(np.float32),
-            "next_observations": future_obs_seq.astype(np.float32),
+            "observations": current_obs.astype(np.float32),
+            "next_observations": next_obs.astype(np.float32),
             "action_chunks": action_seq.astype(np.float32),
             "rewards": reward_seq.astype(np.float32),
             "terminations": np.array([terminated], dtype=np.float32),  # 只返回一个标量值
@@ -97,14 +94,12 @@ class SlidingWindowCollator:
         # 初始化批次张量
         observations = torch.zeros(
             batch_size, 
-            self.config.obs_horizon, 
-            batch[0]["observations"].shape[-1],
+            batch[0]["observations"].shape[-1],  # [batch_size, obs_dim]
             dtype=torch.float32
         )
         next_observations = torch.zeros(
             batch_size, 
-            self.config.obs_horizon, 
-            batch[0]["next_observations"].shape[-1],
+            batch[0]["next_observations"].shape[-1],  # [batch_size, obs_dim]
             dtype=torch.float32
         )
         action_chunks = torch.zeros(
@@ -114,9 +109,8 @@ class SlidingWindowCollator:
             dtype=torch.float32
         )
         rewards = torch.zeros(batch_size, self.config.pred_horizon, 1, dtype=torch.float32)
-        terminations = torch.zeros(batch_size, 1, dtype=torch.float32)  # 修改为只包含一个值
+        terminations = torch.zeros(batch_size, 1, dtype=torch.float32)
         valid_length = torch.zeros(batch_size, dtype=torch.long)
-        is_terminal = torch.zeros(batch_size, dtype=torch.bool)
         
         # 填充批次数据
         for i, item in enumerate(batch):
@@ -124,13 +118,16 @@ class SlidingWindowCollator:
             next_observations[i] = torch.from_numpy(item["next_observations"])
             action_chunks[i] = torch.from_numpy(item["action_chunks"])
             rewards[i] = torch.from_numpy(item["rewards"]).float()
-            terminations[i] = torch.from_numpy(item["terminations"]).float()  # 直接赋值
-            valid_length[i] = torch.tensor(item["valid_length"].item())  # 转换为标量
+            terminations[i] = torch.from_numpy(item["terminations"]).float()
+            valid_length[i] = torch.tensor(item["valid_length"].item())
 
+        # 为了与模型兼容，将观测扩展为序列格式 [batch_size, 1, obs_dim]
+        observations_seq = observations.unsqueeze(1)  # [batch_size, 1, obs_dim]
+        next_observations_seq = next_observations.unsqueeze(1)  # [batch_size, 1, obs_dim]
             
         return {
-            "observations": observations,
-            "next_observations": next_observations,
+            "observations": observations_seq,
+            "next_observations": next_observations_seq,
             "action_chunks": action_chunks,
             "rewards": rewards,
             "terminations": terminations,

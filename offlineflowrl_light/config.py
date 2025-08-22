@@ -19,23 +19,33 @@ class Config:
     dataset_name: str = "mujoco/pusher/expert-v0"
     
     # 序列参数
-    obs_horizon: int = 2
+    obs_horizon: int = 1  # 观测序列长度，设置为1表示只使用当前观测
     pred_horizon: int = 64
     action_horizon: int = 32
     inference_steps: int = 1
     window_stride: int = 1  # 滑动窗口步长
     
     # 模型参数
-    time_dim: int = 32
-    hidden_dim: int = 256
-    sigma: float = 0.0
+    hidden_dim: int = 512
+    time_dim: int = 64
     
-    # 归一化
-    normalize_data: bool = True
+    # 训练参数
+    gamma: float = 0.99
+    tau: float = 0.005
+    target_update_freq: int = 1
+    actor_update_freq: int = 1
     
-    # 测试参数
-    test_episodes: int = 5
-    max_steps: int = 300
+    # CQL参数
+    cql_alpha: float = 1.0
+    cql_temp: float = 1.0
+    cql_num_samples: int = 10
+    
+    # 其他参数
+    normalize_q_loss: bool = True
+    grad_clip_value: float = 1.0
+    num_workers: int = 0
+    test_episodes: int = 10
+    max_steps: int = 1000
     
     # 动作维度（在初始化时设置）
     action_dim: int = 0
@@ -45,18 +55,6 @@ class Config:
     gradient_accumulation_steps: int = 1
     num_workers: int = 0  # Windows上设置为0避免多进程问题
 
-
-    # 强化学习参数（需要有默认值）
-    grad_clip_value: float = 1.0
-    cql_alpha: float = 1.0
-    cql_temp: float = 1.0
-    cql_num_samples: int = 10
-    tau: float = 0.005
-    gamma: float = 0.99
-    actor_update_freq: int = 1
-    target_update_freq: int = 1
-
-    normalize_q_loss: bool = True
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     
     def __post_init__(self):
