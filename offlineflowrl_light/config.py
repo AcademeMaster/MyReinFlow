@@ -21,7 +21,7 @@ class Config:
     # 序列参数
     obs_horizon: int = 1  # 观测序列长度，设置为1表示只使用当前观测
     pred_horizon: int = 16
-    action_horizon: int = pred_horizon/8
+    action_horizon: int = 2
     inference_steps: int = 1
     window_stride: int = 1  # 滑动窗口步长
     
@@ -40,20 +40,26 @@ class Config:
     cql_temp: float = 1.0
     cql_num_samples: int = 10
     
+    # BC损失权重衰减参数
+    bc_loss_initial_weight: float = 1.0  # BC损失初始权重
+    bc_loss_final_weight: float = 0.1    # BC损失最终权重
+    bc_loss_decay_steps: int = 10000     # 衰减步数
+    
     # 其他参数
     normalize_q_loss: bool = False
     grad_clip_value: float = 1.0
     num_workers: int = 0
-    test_episodes: int = 10
+    test_episodes: int = 20
     max_steps: int = 1000
     
     # 动作维度（在初始化时设置）
+    observation_dim: int = 0
     action_dim: int = 0
     
     # Accelerator相关参数
     mixed_precision: str = "no"
     gradient_accumulation_steps: int = 1
-    num_workers: int = 0  # Windows上设置为0避免多进程问题
+
 
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     

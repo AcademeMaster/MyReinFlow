@@ -205,6 +205,11 @@ class MeanFlowActor(nn.Module):
         self.obs_dim = obs_dim
         self.model = MeanTimeCondFlow(obs_dim, action_dim, cfg.hidden_dim, cfg.time_dim,
                                       cfg.pred_horizon, cfg.obs_horizon)
+        # 添加训练步数计数器
+        self.training_steps = 0
+
+        # 定义动作边界
+        self.action_bound = 2.0
 
     @staticmethod
     def sample_t_r(n: int, device) -> Tuple[Tensor, Tensor]:
@@ -216,9 +221,7 @@ class MeanFlowActor(nn.Module):
         self.model.eval()
         device = next(self.parameters()).device
         obs = obs.to(device)
-        return self.sample_mean_flow(obs,n_steps=n_steps)
-
-
+        return self.sample_mean_flow(obs,n_steps=n_steps)*self.action_bound
 
     def sample_mean_flow(self, obs: Tensor, n_steps: int = 1) -> Tensor:
         """使用单个观测进行均值流采样"""
@@ -234,8 +237,8 @@ class MeanFlowActor(nn.Module):
             t = torch.full((x.shape[0],), i * dt, device=device)
             v = self.model(obs, x, r, t)
             x = x - v * dt
-
-        return torch.clamp(x, -1, 1)
+        x = torch.tanh(x)
+        return x
 
     def flow_bc_loss(self, obs: Tensor, action_chunk: Tensor) -> Tensor:
         """MeanFlow 训练损失（JVP 版）"""
@@ -263,6 +266,26 @@ class MeanFlowActor(nn.Module):
         delta = torch.clamp(t - r, min=1e-6).view(-1, 1, 1)
         u_tgt = (v - delta * dudt).detach()
         return F.mse_loss(u_pred, u_tgt)
+    
+    def get_bc_weight(self) -> float:
+        """
+        计算当前BC损失的权重
+        从初始权重线性衰减到最终权重
+        """
+        # 增加训练步数计数
+        self.training_steps += 1
+        
+        # 线性衰减
+        initial_weight = self.cfg.bc_loss_initial_weight
+        final_weight = self.cfg.bc_loss_final_weight
+        decay_steps = self.cfg.bc_loss_decay_steps
+        
+        if self.training_steps >= decay_steps:
+            return final_weight
+        
+        # 线性插值
+        weight = initial_weight - (initial_weight - final_weight) * (self.training_steps / decay_steps)
+        return weight
 
 
 # ========= Whole RL model (Actor + Double Q + target) =========
@@ -392,19 +415,27 @@ class ConservativeMeanFQL(nn.Module):
         actor_actions = self.actor.predict_action_chunk(obs, n_steps=self.cfg.inference_steps)
         q1, q2 = self.critic(obs, actor_actions)
         q = torch.min(q1, q2)
-        q_loss = -q.mean()
+        q_loss = torch.exp(-q.mean())
 
         # 可选：Q损失归一化
         if self.cfg.normalize_q_loss:
             q_loss = q_loss * (1.0 / (torch.abs(q).mean().detach() + 1e-8))
 
+        # 计算当前BC损失权重
+        bc_weight = self.actor.get_bc_weight()
 
-        loss = q_loss + bc_loss*0
+        # Q损失权重为1 - BC权重
+        q_weight = 1.0 - bc_weight
+        print(f"BC weight: {bc_weight:.4f}, Q weight: {q_weight:.4f}")
+        # 组合损失函数
+        loss = q_weight * q_loss + bc_weight * bc_loss
         info = dict(
             loss_actor=loss.item(),
             loss_bc_flow=bc_loss.item(),
             q_loss=q_loss.item(),
-            q_mean=q.mean().item()
+            q_mean=q.mean().item(),
+            bc_weight=bc_weight,  # 记录当前BC权重
+            q_weight=q_weight     # 记录当前Q权重
         )
         return loss, info
 
@@ -493,6 +524,10 @@ class LitConservativeMeanFQL(L.LightningModule):
         # 评估actor loss
         val_actor_loss, actor_info = self.net.loss_actor(obs, actions)
         self.log("val/actor_loss", val_actor_loss, on_step=False, on_epoch=True, prog_bar=True)
+
+        # 获取BC权重
+        bc_weight = actor_info.get("bc_weight", 0.0)  # 默认为0.0，如果不存在则使用该值
+        self.log("val/bc_weight", bc_weight, on_step=False, on_epoch=True, prog_bar=True)
 
         # 记录奖励
         self.log("val/reward", rewards.mean(), on_step=False, on_epoch=True, prog_bar=True)

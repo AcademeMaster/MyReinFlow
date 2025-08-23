@@ -138,6 +138,7 @@ def main():
     obs_dim = sample_episode.observations.shape[-1]
     action_dim = sample_episode.actions.shape[-1]
     config.action_dim = action_dim
+    config.observation_dim=obs_dim
 
     dm = MinariDataModule(config)
     # 确保在测试模式下也调用setup方法
