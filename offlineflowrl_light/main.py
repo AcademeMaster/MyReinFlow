@@ -96,7 +96,7 @@ def main():
     parser.add_argument("--epochs", type=int, default=100, help="训练轮数")
     parser.add_argument("--batch-size", type=int, default=1024, help="批量大小")
     parser.add_argument("--checkpoint", help="测试时使用的模型路径")
-    parser.add_argument("--test-episodes", type=int, default=10, help="测试轮数")
+    parser.add_argument("--test-episodes", type=int, default=20, help="测试轮数")
     parser.add_argument("--learning-rate", type=float, default=1e-4, help="学习率")
     parser.add_argument("--normalize", action="store_true", default=True, help="启用数据归一化")
     parser.add_argument("--no-normalize", dest="normalize", action="store_false", help="禁用数据归一化")

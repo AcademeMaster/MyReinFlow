@@ -20,7 +20,7 @@ class Config:
     
     # 序列参数
     obs_horizon: int = 1  # 观测序列长度，设置为1表示只使用当前观测
-    pred_horizon: int = 64
+    pred_horizon: int = 16
     action_horizon: int = pred_horizon/8
     inference_steps: int = 1
     window_stride: int = 1  # 滑动窗口步长
