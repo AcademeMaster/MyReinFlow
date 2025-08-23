@@ -374,35 +374,20 @@ class ConservativeMeanFQL(nn.Module):
         # CQL损失计算
         cql1 = torch.logsumexp(q1s / temp, dim=1).mean() * temp - q1.mean()
         cql2 = torch.logsumexp(q2s / temp, dim=1).mean() * temp - q2.mean()
-        cql = (cql1 + cql2) * self.cfg.cql_alpha
+        cql_loss = (cql1 + cql2) * self.cfg.cql_alpha
 
-        # 动态平衡TD loss和CQL loss
-        if hasattr(self, '_td_loss_stats') and hasattr(self, '_cql_loss_stats'):
-            self._td_loss_stats = 0.9 * self._td_loss_stats + 0.1 * td_loss.item()
-            self._cql_loss_stats = 0.9 * self._cql_loss_stats + 0.1 * cql.item()
-        else:
-            self._td_loss_stats = td_loss.item()
-            self._cql_loss_stats = cql.item()
 
-        # 根据损失统计进行归一化
-        if self._cql_loss_stats > 1e-8:
-            cql_scale = self._td_loss_stats / self._cql_loss_stats
-            cql_normalized = cql * cql_scale
-        else:
-            cql_normalized = cql
 
-        total = td_loss + cql_normalized
+        total = td_loss + cql_loss
         info = dict(
             td_loss=td_loss.item(),
-            cql_loss=cql_normalized.item(),
+            cql_loss=cql_loss.item(),
             total_critic_loss=total.item(),
             q1_mean=q1.mean().item(),
             q2_mean=q2.mean().item(),
             target_mean=target.mean().item(),
             cql1=cql1.item(),
             cql2=cql2.item(),
-            td_loss_raw=td_loss.item(),
-            cql_loss_raw=cql.item()
         )
         return total, info
 
@@ -415,18 +400,14 @@ class ConservativeMeanFQL(nn.Module):
         actor_actions = self.actor.predict_action_chunk(obs, n_steps=self.cfg.inference_steps)
         q1, q2 = self.critic(obs, actor_actions)
         q = torch.min(q1, q2)
-        q_loss = torch.exp(-q.mean())
-
-        # 可选：Q损失归一化
-        if self.cfg.normalize_q_loss:
-            q_loss = q_loss * (1.0 / (torch.abs(q).mean().detach() + 1e-8))
+        q_loss = -q.mean()
 
         # 计算当前BC损失权重
         bc_weight = self.actor.get_bc_weight()
 
         # Q损失权重为1 - BC权重
         q_weight = 1.0 - bc_weight
-        print(f"BC weight: {bc_weight:.4f}, Q weight: {q_weight:.4f}")
+
         # 组合损失函数
         loss = q_weight * q_loss + bc_weight * bc_loss
         info = dict(
