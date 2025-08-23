@@ -26,8 +26,6 @@ class SlidingWindowDataset(Dataset):
         # 创建滑动窗口索引
         self._create_sliding_windows()
         
-
-
     def _create_sliding_windows(self):
         """创建滑动窗口索引"""
         self.window_indices = []
@@ -37,10 +35,8 @@ class SlidingWindowDataset(Dataset):
             for start in range(0, episode_length  - self.config.pred_horizon,
                               self.config.window_stride):
                 self.window_indices.append((episode_idx, start))
-
-
-
-    def __len__(self) -> int:
+                
+    def __len__(self):
         """返回数据集大小"""
         return len(self.window_indices)
 
@@ -56,6 +52,7 @@ class SlidingWindowDataset(Dataset):
         next_obs = episode.observations[start + 1] if start + 1 < len(episode.observations) else episode.observations[start]
         
         # 提取动作序列 [pred_horizon, action_dim]
+
         action_seq = episode.actions[start:start + self.config.pred_horizon]
         
         # 提取奖励序列 [pred_horizon, 1]

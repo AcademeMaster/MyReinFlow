@@ -21,7 +21,7 @@ class Config:
     # 序列参数
     obs_horizon: int = 1  # 观测序列长度，设置为1表示只使用当前观测
     pred_horizon: int = 64
-    action_horizon: int = 32
+    action_horizon: int = pred_horizon/8
     inference_steps: int = 1
     window_stride: int = 1  # 滑动窗口步长
     
@@ -41,7 +41,7 @@ class Config:
     cql_num_samples: int = 10
     
     # 其他参数
-    normalize_q_loss: bool = True
+    normalize_q_loss: bool = False
     grad_clip_value: float = 1.0
     num_workers: int = 0
     test_episodes: int = 10

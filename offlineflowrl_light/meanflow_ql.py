@@ -205,11 +205,6 @@ class MeanFlowActor(nn.Module):
         self.obs_dim = obs_dim
         self.model = MeanTimeCondFlow(obs_dim, action_dim, cfg.hidden_dim, cfg.time_dim,
                                       cfg.pred_horizon, cfg.obs_horizon)
-        # 我们现在只使用单个观测，不需要观测历史
-
-    def reset_obs_history(self):
-        """重置观测历史 - 现在不需要了"""
-        pass
 
     @staticmethod
     def sample_t_r(n: int, device) -> Tuple[Tensor, Tensor]:
@@ -221,36 +216,17 @@ class MeanFlowActor(nn.Module):
         self.model.eval()
         device = next(self.parameters()).device
         obs = obs.to(device)
-        x = torch.randn(obs.size(0), self.pred_horizon, self.action_dim, device=device)
-        return self.sample_mean_flow(obs, x, n_steps=n_steps)
+        return self.sample_mean_flow(obs,n_steps=n_steps)
 
-    def select_action(self, obs: Tensor, n_steps: int = 1) -> Tensor:
-        """
-        为推理选择动作，现在直接使用单个观测
-        输入: obs 形状为 [obs_dim] 或 [B, obs_dim]
-        输出: 动作张量 [B, action_dim]
-        """
-        self.model.eval()
-        device = next(self.parameters()).device
-        obs = obs.to(device)
 
-        # 确保输入是正确的形状
-        if obs.dim() == 1:
-            obs = obs.unsqueeze(0)  # [1, obs_dim]
 
-        # 返回第一个动作
-        action_chunk = self.sample_mean_flow(obs, n_steps=n_steps)
-        return action_chunk[:, 0, :]
-
-    def sample_mean_flow(self, obs: Tensor, x: Tensor = None, n_steps: int = 1) -> Tensor:
+    def sample_mean_flow(self, obs: Tensor, n_steps: int = 1) -> Tensor:
         """使用单个观测进行均值流采样"""
         device = next(self.parameters()).device
         obs = obs.to(device)
-
-        if x is None:
-            x = torch.randn(obs.size(0), self.pred_horizon, self.action_dim, device=device)
-
+        x = torch.randn(obs.size(0), self.pred_horizon, self.action_dim, device=device)
         n_steps = max(1, int(n_steps))
+
         dt = 1.0 / n_steps
 
         for i in range(n_steps, 0, -1):
@@ -362,9 +338,10 @@ class ConservativeMeanFQL(nn.Module):
         # CQL正则项
         num_samples = self.cfg.cql_num_samples
         rep_obs = obs.repeat_interleave(num_samples, dim=0)
-        noise = torch.randn(B * num_samples, self.cfg.pred_horizon, self.action_dim, device=obs.device)
-        sampled_actions = self.actor.sample_mean_flow(rep_obs, noise, n_steps=self.cfg.inference_steps)
-
+        sampled_actions = torch.rand(B * num_samples, self.cfg.pred_horizon, self.action_dim,
+                                     device=obs.device) * 2 - 1  # [-1, 1]
+        # pusher Action Space:Box(-2.0, 2.0, (7,), float32)，这里需要优化根据环境自适应
+        sampled_actions=2*sampled_actions
         # 计算采样动作的Q值
         q1s, q2s = self.critic(rep_obs, sampled_actions)
         q1s = q1s.view(B, num_samples)
@@ -422,7 +399,7 @@ class ConservativeMeanFQL(nn.Module):
             q_loss = q_loss * (1.0 / (torch.abs(q).mean().detach() + 1e-8))
 
 
-        loss = q_loss + bc_loss
+        loss = q_loss + bc_loss*0
         info = dict(
             loss_actor=loss.item(),
             loss_bc_flow=bc_loss.item(),
