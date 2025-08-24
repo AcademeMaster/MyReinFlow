@@ -28,6 +28,7 @@ class Config:
     # 模型参数
     hidden_dim: int = 512
     time_dim: int = 64
+    N: int = 10  # Best-of-N采样的N值
     
     # 训练参数
     gamma: float = 0.99

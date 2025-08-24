@@ -46,8 +46,7 @@ def evaluate_online(model: LitConservativeMeanFQL, config: Config, render_mode: 
         done = False
         step = 0
 
-        # 重置模型中的观测历史
-        model.net.actor.reset_obs_history()
+
 
         while not done and step < config.max_steps:
             # Prepare observation tensor

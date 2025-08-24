@@ -70,9 +70,11 @@ def evaluate_online(model: LitConservativeMeanFQL, config: Config, render_mode: 
             
             # 检查是否需要生成新的动作块
             if action_chunk is None or action_idx >= len(action_chunk):
-                # 使用predict_action_chunk方法获取动作块
-                action_chunk = model.net.actor.predict_action_chunk(obs_tensor, n_steps=config.inference_steps)  # [1, pred_horizon, action_dim]
-                action_chunk = action_chunk[0].cpu().detach().numpy()  # [pred_horizon, action_dim]
+                # 使用Best-of-N采样方法获取动作块
+                with torch.no_grad():
+                    obs_tensor = obs_tensor.to(model.device)
+                    action_chunk = model(obs_tensor)  # [1, pred_horizon, action_dim]
+                    action_chunk = action_chunk[0].cpu().detach().numpy()  # [pred_horizon, action_dim]
                 action_idx = 0
             
             # 从动作块中获取当前动作

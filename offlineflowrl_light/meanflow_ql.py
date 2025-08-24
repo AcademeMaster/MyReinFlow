@@ -240,6 +240,22 @@ class MeanFlowActor(nn.Module):
         x = torch.tanh(x)
         return x
 
+    def sample_n_candidates(self, obs: Tensor, N: int, n_steps: int = 1) -> List[Tensor]:
+        """采样N个候选动作序列"""
+        # 并行化生成N个候选动作序列
+        # 将原始观测复制N次以并行处理
+        B = obs.shape[0]  # batch size
+        expanded_obs = obs.unsqueeze(1).repeat(1, N, 1).view(B * N, -1)  # [B*N, obs_dim]
+        
+        # 并行生成所有候选动作序列
+        candidates = self.sample_mean_flow(expanded_obs, n_steps)
+        candidates = candidates * self.action_bound
+        
+        # 将结果重新组织为列表形式
+        # 从 [B*N, pred_horizon, action_dim] 重新组织为 B 个 [N, pred_horizon, action_dim] 的列表
+        candidates = candidates.view(B, N, self.pred_horizon, self.action_dim)
+        return [candidates[:, i] for i in range(N)]
+
     def flow_bc_loss(self, obs: Tensor, action_chunk: Tensor) -> Tensor:
         """MeanFlow 训练损失（JVP 版）"""
         device = next(self.parameters()).device
@@ -322,6 +338,34 @@ class ConservativeMeanFQL(nn.Module):
         factors = (gamma ** torch.arange(H, device=rewards.device, dtype=rewards.dtype)).unsqueeze(0)
         return torch.sum(rewards_squeezed * factors, dim=1)  # [B]
 
+    def best_of_n_sampling(self, obs: Tensor, N: int) -> Tensor:
+        """
+        Best-of-N采样实现
+        从行为策略采样N个候选动作序列，选择Q值最高的一个
+        """
+        with torch.no_grad():
+            # 并行化采样N个候选动作序列
+            B = obs.shape[0]  # batch size
+            expanded_obs = obs.unsqueeze(1).repeat(1, N, 1).view(B * N, -1)  # [B*N, obs_dim]
+            
+            # 并行生成所有候选动作序列
+            candidates = self.actor.sample_mean_flow(expanded_obs, self.cfg.inference_steps)
+            candidates = candidates * self.actor.action_bound
+            
+            # 计算每个候选的Q值
+            # 并行计算所有候选的Q值
+            q1_values, q2_values = self.target_critic(expanded_obs, candidates)
+            q_values = torch.min(q1_values, q2_values).view(B, N)  # [B, N]
+            
+            # 选择Q值最高的候选
+            best_indices = torch.argmax(q_values, dim=1)  # [B]
+            
+            # 返回最佳候选动作序列
+            candidates = candidates.view(B, N, self.cfg.pred_horizon, self.action_dim)
+            batch_indices = torch.arange(B)
+            best_action_chunks = candidates[batch_indices, best_indices]  # [B, pred_horizon, action_dim]
+            return best_action_chunks
+
     def loss_critic(self, obs: Tensor, actions: Tensor, next_obs: Tensor,
                     rewards: Tensor, terminated: Tensor, gamma: float) -> Tuple[Tensor, Dict]:
         """
@@ -335,8 +379,8 @@ class ConservativeMeanFQL(nn.Module):
         """
         B = obs.shape[0]
         with torch.no_grad():
-            # 使用目标网络计算下一状态的Q值
-            next_actions = self.actor.predict_action_chunk(next_obs, n_steps=self.cfg.inference_steps)
+            # 使用目标网络计算下一状态的Q值 - 使用Best-of-N采样
+            next_actions = self.best_of_n_sampling(next_obs, self.cfg.N)
             next_q1, next_q2 = self.target_critic(next_obs, next_actions)
             next_q = torch.min(next_q1, next_q2).view(B)
 
@@ -345,7 +389,7 @@ class ConservativeMeanFQL(nn.Module):
 
             # 计算bootstrap项
             done = terminated.view(-1).float()  # 终止标志 [B]
-  
+
             future_value = (1.0 - done) * (gamma ** self.cfg.pred_horizon) * next_q
 
             # 正确的TD目标
@@ -358,36 +402,13 @@ class ConservativeMeanFQL(nn.Module):
         # TD损失
         td_loss = F.mse_loss(q1, target) + F.mse_loss(q2, target)
 
-        # CQL正则项
-        num_samples = self.cfg.cql_num_samples
-        rep_obs = obs.repeat_interleave(num_samples, dim=0)
-        sampled_actions = torch.rand(B * num_samples, self.cfg.pred_horizon, self.action_dim,
-                                     device=obs.device) * 2 - 1  # [-1, 1]
-        # pusher Action Space:Box(-2.0, 2.0, (7,), float32)，这里需要优化根据环境自适应
-        sampled_actions=2*sampled_actions
-        # 计算采样动作的Q值
-        q1s, q2s = self.critic(rep_obs, sampled_actions)
-        q1s = q1s.view(B, num_samples)
-        q2s = q2s.view(B, num_samples)
-
-        temp = self.cfg.cql_temp
-        # CQL损失计算
-        cql1 = torch.logsumexp(q1s / temp, dim=1).mean() * temp - q1.mean()
-        cql2 = torch.logsumexp(q2s / temp, dim=1).mean() * temp - q2.mean()
-        cql_loss = (cql1 + cql2) * self.cfg.cql_alpha
-
-
-
-        total = td_loss + cql_loss
+        total = td_loss
         info = dict(
             td_loss=td_loss.item(),
-            cql_loss=cql_loss.item(),
             total_critic_loss=total.item(),
             q1_mean=q1.mean().item(),
             q2_mean=q2.mean().item(),
             target_mean=target.mean().item(),
-            cql1=cql1.item(),
-            cql2=cql2.item(),
         )
         return total, info
 
@@ -396,8 +417,8 @@ class ConservativeMeanFQL(nn.Module):
         # 行为克隆损失
         bc_loss = self.actor.flow_bc_loss(obs, action_batch)
 
-        # Q引导损失
-        actor_actions = self.actor.predict_action_chunk(obs, n_steps=self.cfg.inference_steps)
+        # Q引导损失 - 使用Best-of-N采样
+        actor_actions = self.best_of_n_sampling(obs, self.cfg.N)
         q1, q2 = self.critic(obs, actor_actions)
         q = torch.min(q1, q2)
         q_loss = -q.mean()
@@ -437,8 +458,9 @@ class LitConservativeMeanFQL(L.LightningModule):
         self.automatic_optimization = False
 
     def forward(self, obs: Tensor) -> Tensor:
-        """前向传播：预测动作"""
-        return self.net.actor.predict_action_chunk(obs, n_steps=self.cfg.inference_steps)
+        """前向传播：使用优化的Best-of-N采样预测动作"""
+        # 使用优化后的Best-of-N采样方法来预测动作
+        return self.net.best_of_n_sampling(obs, self.cfg.N)
 
     def training_step(self, batch: Dict[str, Tensor], batch_idx: int):
         device = self.device
