@@ -14,77 +14,10 @@ from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 # 本地模块导入
 from config import Config
 from dataset import MinariDataModule, SlidingWindowDataset
-from meanflow_ql import LitConservativeMeanFQL
-
+# from meanflow_ql import LitMeanFQL
+from light_config import LitMeanFQL
 
 # PyTorch imports
-
-
-def evaluate_online(model: LitConservativeMeanFQL, config: Config, render_mode: str = "human"):
-    """Online evaluation in the environment"""
-    # 使用Minari数据集的恢复环境功能
-    minari_dataset = minari.load_dataset(config.dataset_name)
-    
-    # 尝试使用指定的渲染模式恢复环境
-    eval_env = None
-    if render_mode is not None and render_mode != "none":
-        try:
-            eval_env = minari_dataset.recover_environment(eval_env=True, render_mode=render_mode)
-        except TypeError:
-            # 兼容旧版本不支持 render_mode 参数
-            try:
-                eval_env = minari_dataset.recover_environment(eval_env=True)
-            except Exception:
-                eval_env = minari_dataset.recover_environment()
-    else:
-        eval_env = minari_dataset.recover_environment(eval_env=True)
-
-    total_rewards = []
-    for ep in range(config.test_episodes):
-        obs, _ = eval_env.reset()
-        episode_reward = 0
-        done = False
-        step = 0
-
-
-
-        while not done and step < config.max_steps:
-            # Prepare observation tensor
-            obs_tensor = torch.tensor(obs).float()  # [obs_dim]
-            
-            # 使用select_action方法获取单个动作，内部维护观测历史
-            action = model.net.actor.select_action(obs_tensor, n_steps=config.inference_steps)  # [1, action_dim]
-            action = action[0].cpu().numpy()  # [action_dim]
-
-            # Denormalize if needed
-            if config.normalize_data:
-                # 直接使用minari数据集计算统计信息，避免创建SlidingWindowDataset
-                all_actions = []
-                for episode in minari_dataset.iterate_episodes():
-                    all_actions.append(episode.actions)
-                all_actions = np.concatenate(all_actions, axis=0)
-                action_stats = {
-                    "mean": all_actions.mean(axis=0),
-                    "std": all_actions.std(axis=0) + 1e-8
-                }
-                # 反归一化动作
-                action = action * action_stats["std"] + action_stats["mean"]
-
-            next_obs, reward, terminated, truncated, _ = eval_env.step(action)
-            episode_reward += reward
-            obs = next_obs
-            step += 1
-            done = terminated or truncated
-
-        total_rewards.append(episode_reward)
-        print(f"Episode {ep + 1}: Reward = {episode_reward}")
-
-    avg_reward = np.mean(total_rewards)
-    std_reward = np.std(total_rewards) if len(total_rewards) > 1 else 0.0
-    print(f"Average Reward over {config.test_episodes} episodes: {avg_reward:.2f} ± {std_reward:.2f}")
-    eval_env.close()
-    return avg_reward
-
 
 def main():
     # 解析命令行参数
@@ -93,21 +26,19 @@ def main():
                         help="运行模式: train 或 test")
     parser.add_argument("--dataset", default="mujoco/pusher/expert-v0", help="Minari数据集名称")
     parser.add_argument("--epochs", type=int, default=100, help="训练轮数")
-    parser.add_argument("--batch-size", type=int, default=1024, help="批量大小")
+    parser.add_argument("--batch-size", type=int, default=2048, help="批量大小")
     parser.add_argument("--checkpoint", help="测试时使用的模型路径")
     parser.add_argument("--test-episodes", type=int, default=20, help="测试轮数")
     parser.add_argument("--learning-rate", type=float, default=1e-4, help="学习率")
-    parser.add_argument("--normalize", action="store_true", default=True, help="启用数据归一化")
+    parser.add_argument("--normalize", action="store_true", default=False, help="启用数据归一化")
     parser.add_argument("--no-normalize", dest="normalize", action="store_false", help="禁用数据归一化")
-    parser.add_argument("--render", choices=["none", "human", "rgb_array"], default="none",
-                        help="测试时的渲染模式 (默认: none)")
     # Accelerator相关参数
-    parser.add_argument("--mixed-precision", type=str, choices=["32-true", "16-mixed", "bf16-mixed"], default="32",
+    parser.add_argument("--mixed-precision", type=str, choices=["32-true", "16-mixed", "bf16-mixed"], default="32-true",
                         help="混合精度训练 (32-true, 16-mixed 或 bf16-mixed)")
     parser.add_argument("--gradient-accumulation-steps", type=int, default=1,
                         help="梯度累积步数")
     # 在线评估开关
-    parser.add_argument("--skip-online-eval", action="store_true", default=True,
+    parser.add_argument("--skip-online-eval", action="store_true", default=False,
                         help="跳过在线评估")
     args = parser.parse_args()
 
@@ -123,7 +54,7 @@ def main():
     )
 
     # 覆盖数据归一化设置（如果指定了）
-    if args.normalize is not None:
+    if hasattr(args, 'normalize'):
         config.normalize_data = args.normalize
 
     print("=" * 50)
@@ -144,17 +75,18 @@ def main():
     if args.mode == "test":
         dm.setup()
 
-    model = LitConservativeMeanFQL(obs_dim, action_dim, config)
+    model = LitMeanFQL(obs_dim, action_dim, config)
 
     # 创建回调函数
     checkpoint_callback = ModelCheckpoint(
-        monitor='val/critic_loss',
-        dirpath='checkpoints/meanflow_ql',
-        filename='meanflow_ql-epoch{epoch:02d}-val_critic_loss{val/critic_loss:.2f}',
+        monitor='val/loss',
+        dirpath='checkpoint_t',
+        filename='meanflow_ql-epoch{epoch:02d}-loss{val/loss:.2f}',
         save_top_k=3,
+        save_last=True,
         mode='min',
     )
-    early_stop = EarlyStopping(monitor="val/critic_loss", patience=5, mode="min")
+    early_stop = EarlyStopping(monitor="val/loss", patience=20, mode="min")
 
     trainer = L.Trainer(
         max_epochs=config.num_epochs,
@@ -173,21 +105,16 @@ def main():
 
     elif args.mode == "test":
         if args.checkpoint:
-            model = LitConservativeMeanFQL.load_from_checkpoint(args.checkpoint, obs_dim=obs_dim, action_dim=action_dim,
-                                                                cfg=config)
+            model = LitMeanFQL.load_from_checkpoint(args.checkpoint, obs_dim=obs_dim, action_dim=action_dim,
+                                                    cfg=config)
         else:
             print("Warning: No checkpoint provided, using untrained model for test.")
 
         # Offline test (action MSE on val data)
         print("\nOffline Testing (Action MSE):")
-        trainer.test(model, dataloaders=dm.val_dataloader())
+        trainer.test(model, dataloaders=dm.test_dataloader())
 
-        # Online evaluation
-        if not args.skip_online_eval:
-            print("\nOnline Evaluation:")
-            evaluate_online(model, config, render_mode=args.render)
-        else:
-            print("\nSkipping online evaluation as requested.")
+
 
 
 if __name__ == "__main__":

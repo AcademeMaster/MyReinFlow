@@ -32,32 +32,6 @@ class FeatureEmbedding(nn.Module):
         return self.net(x)
 
 
-class SequenceEncoder(nn.Module):
-    """编码观测序列的模块"""
-
-    def __init__(self, obs_dim: int, hidden_dim: int, num_layers: int = 2):
-        super().__init__()
-        self.obs_dim = obs_dim
-        self.hidden_dim = hidden_dim
-
-        layers = []
-        input_size = obs_dim
-        for _ in range(num_layers - 1):
-            layers.append(nn.Linear(input_size, hidden_dim))
-            layers.append(nn.ReLU())
-            input_size = hidden_dim
-        layers.append(nn.Linear(input_size, hidden_dim))
-
-        self.net = nn.Sequential(*layers)
-
-    def forward(self, x: Tensor) -> Tensor:
-        # x: [B, seq_len, obs_dim]
-        B, seq_len, _ = x.shape
-        x_flat = x.reshape(B * seq_len, -1)
-        encoded = self.net(x_flat)
-        return encoded.reshape(B, seq_len, -1)
-
-
 class TimeEmbedding(nn.Module):
     """sin/cos time embedding + MLP"""
 
@@ -91,7 +65,6 @@ class DoubleCriticObsAct(nn.Module):
         self.action_horizon = action_horizon
         self.total_action_dim = action_dim * action_horizon
 
-        # 修改为处理单个观测的编码器
         self.obs_encoder = FeatureEmbedding(obs_dim, hidden_dim)
 
         def make_net():
@@ -107,8 +80,6 @@ class DoubleCriticObsAct(nn.Module):
         self.q2 = make_net()
 
     def _prep(self, obs: Tensor, actions: Tensor) -> Tensor:
-        # obs: [B, obs_dim] - 单个观测
-        # actions: [B, H, A] or [B, H*A]
         if actions.dim() == 3:
             act = actions.reshape(actions.shape[0], -1)
         elif actions.dim() == 2:
@@ -116,14 +87,31 @@ class DoubleCriticObsAct(nn.Module):
         else:
             raise ValueError(f"bad actions dim={actions.dim()}")
 
-        # 编码单个观测
-        obs_encoded = self.obs_encoder(obs)  # [B, hidden_dim]
+        obs_encoded = self.obs_encoder(obs)
 
         return torch.cat([obs_encoded, act], dim=-1)
 
     def forward(self, obs: Tensor, actions: Tensor) -> Tuple[Tensor, Tensor]:
         x = self._prep(obs, actions)
         return self.q1(x), self.q2(x)
+
+
+# ========= Value Function (V over obs) =========
+class ValueFunction(nn.Module):
+    def __init__(self, obs_dim: int, hidden_dim: int):
+        super().__init__()
+        self.obs_encoder = FeatureEmbedding(obs_dim, hidden_dim)
+        self.net = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, 1),
+        )
+
+    def forward(self, obs: Tensor) -> Tensor:
+        obs_encoded = self.obs_encoder(obs)
+        return self.net(obs_encoded)
 
 
 # ========= Time-conditioned flow model (predicts velocity [B,H,A]) =========
@@ -137,7 +125,6 @@ class MeanTimeCondFlow(nn.Module):
 
         self.t_embed = TimeEmbedding(time_dim)
         self.r_embed = TimeEmbedding(time_dim)
-        # 修改为处理单个观测的编码器
         self.obs_encoder = FeatureEmbedding(obs_dim, hidden_dim)
         self.noise_embed = FeatureEmbedding(action_dim, hidden_dim)
 
@@ -173,7 +160,6 @@ class MeanTimeCondFlow(nn.Module):
         return t.view(-1)[:B]
 
     def forward(self, obs: Tensor, z: Tensor, r: Tensor, t: Tensor) -> Tensor:
-        # obs: [B, obs_dim] - 单个观测
         z = self._norm_z(z)
         B, H, A = z.shape
         t = self._norm_time(t, B)
@@ -182,7 +168,6 @@ class MeanTimeCondFlow(nn.Module):
         te = self.t_embed(t)  # [B, Td]
         re = self.r_embed(r)  # [B, Td]
 
-        # 编码单个观测
         obs_encoded = self.obs_encoder(obs)  # [B, hidden_dim]
 
         ne = self.noise_embed(z.reshape(B * H, A)).view(B, H, -1)  # [B,H,Hd]
@@ -205,11 +190,9 @@ class MeanFlowActor(nn.Module):
         self.obs_dim = obs_dim
         self.model = MeanTimeCondFlow(obs_dim, action_dim, cfg.hidden_dim, cfg.time_dim,
                                       cfg.pred_horizon, cfg.obs_horizon)
-        # 添加训练步数计数器
-        self.training_steps = 0
 
         # 定义动作边界
-        self.action_bound = 2.0
+        self.action_scale = 2.0
 
     @staticmethod
     def sample_t_r(n: int, device) -> Tuple[Tensor, Tensor]:
@@ -221,15 +204,19 @@ class MeanFlowActor(nn.Module):
         self.model.eval()
         device = next(self.parameters()).device
         obs = obs.to(device)
-        return self.sample_mean_flow(obs,n_steps=n_steps)*self.action_bound
+
+        with torch.no_grad():
+            action_chunk = self.sample_mean_flow(obs, n_steps=n_steps)
+            return torch.clamp(action_chunk, -self.action_scale, self.action_scale)
 
     def sample_mean_flow(self, obs: Tensor, n_steps: int = 1) -> Tensor:
         """使用单个观测进行均值流采样"""
         device = next(self.parameters()).device
         obs = obs.to(device)
-        x = torch.randn(obs.size(0), self.pred_horizon, self.action_dim, device=device)
-        n_steps = max(1, int(n_steps))
 
+        # 使用均匀分布初始化动作序列，范围[-action_scale, action_scale]
+        x = (torch.rand(obs.size(0), self.pred_horizon, self.action_dim, device=device) - 0.5) * 2 * self.action_scale
+        n_steps = max(1, int(n_steps))
         dt = 1.0 / n_steps
 
         for i in range(n_steps, 0, -1):
@@ -237,32 +224,16 @@ class MeanFlowActor(nn.Module):
             t = torch.full((x.shape[0],), i * dt, device=device)
             v = self.model(obs, x, r, t)
             x = x - v * dt
-        x = torch.tanh(x)
+
         return x
 
-    def sample_n_candidates(self, obs: Tensor, N: int, n_steps: int = 1) -> List[Tensor]:
-        """采样N个候选动作序列"""
-        # 并行化生成N个候选动作序列
-        # 将原始观测复制N次以并行处理
-        B = obs.shape[0]  # batch size
-        expanded_obs = obs.unsqueeze(1).repeat(1, N, 1).view(B * N, -1)  # [B*N, obs_dim]
-        
-        # 并行生成所有候选动作序列
-        candidates = self.sample_mean_flow(expanded_obs, n_steps)
-        candidates = candidates * self.action_bound
-        
-        # 将结果重新组织为列表形式
-        # 从 [B*N, pred_horizon, action_dim] 重新组织为 B 个 [N, pred_horizon, action_dim] 的列表
-        candidates = candidates.view(B, N, self.pred_horizon, self.action_dim)
-        return [candidates[:, i] for i in range(N)]
-
-    def flow_bc_loss(self, obs: Tensor, action_chunk: Tensor) -> Tensor:
-        """MeanFlow 训练损失（JVP 版）"""
+    def per_sample_flow_bc_loss(self, obs: Tensor, action_chunk: Tensor) -> Tensor:
         device = next(self.parameters()).device
-        noise = torch.randn_like(action_chunk)
+
+        z0 = torch.randn_like(action_chunk)
         t, r = self.sample_t_r(action_chunk.shape[0], device=device)
-        z = (1 - t.view(-1, 1, 1)) * action_chunk + t.view(-1, 1, 1) * noise
-        v = noise - action_chunk
+        z = (1 - t.view(-1, 1, 1)) * action_chunk + t.view(-1, 1, 1) * z0
+        v = z0 - action_chunk
 
         obs = obs.requires_grad_(True)
         z = z.requires_grad_(True)
@@ -281,289 +252,211 @@ class MeanFlowActor(nn.Module):
 
         delta = torch.clamp(t - r, min=1e-6).view(-1, 1, 1)
         u_tgt = (v - delta * dudt).detach()
-        return F.mse_loss(u_pred, u_tgt)
-    
-    def get_bc_weight(self) -> float:
-        """
-        计算当前BC损失的权重
-        从初始权重线性衰减到最终权重
-        """
-        # 增加训练步数计数
-        self.training_steps += 1
-        
-        # 线性衰减
-        initial_weight = self.cfg.bc_loss_initial_weight
-        final_weight = self.cfg.bc_loss_final_weight
-        decay_steps = self.cfg.bc_loss_decay_steps
-        
-        if self.training_steps >= decay_steps:
-            return final_weight
-        
-        # 线性插值
-        weight = initial_weight - (initial_weight - final_weight) * (self.training_steps / decay_steps)
-        return weight
+        losses = F.mse_loss(u_pred, u_tgt, reduction='none').mean(dim=[1, 2])  # [B]
+        return losses
 
 
-# ========= Whole RL model (Actor + Double Q + target) =========
-class ConservativeMeanFQL(nn.Module):
+# ========= Whole RL model (Actor + Double Q + V + targets) =========
+class MeanFQL(nn.Module):
     def __init__(self, obs_dim: int, action_dim: int, cfg: Config):
         super().__init__()
         self.cfg = cfg
         self.obs_dim = obs_dim
         self.action_dim = action_dim
         self.actor = MeanFlowActor(obs_dim, action_dim, cfg)
-        # 修改critic以适应单个观测
         self.critic = DoubleCriticObsAct(obs_dim, action_dim, cfg.hidden_dim,
                                          cfg.pred_horizon)
         self.target_critic = copy.deepcopy(self.critic)
         for p in self.target_critic.parameters():
             p.requires_grad = False
 
-        # 初始化损失统计
-        self._td_loss_stats = 1.0
-        self._cql_loss_stats = 1.0
+        self.vf = ValueFunction(obs_dim, cfg.hidden_dim)
 
     def discounted_returns(self, rewards: Tensor, gamma: float) -> Tensor:
-        """
-        计算H步折扣回报（从t到t+H-1）
-        rewards: [B, H, 1] 包含从t到t+H-1的奖励
-        返回: [B] 每个序列的折扣回报
-        """
         gamma = max(0.0, min(1.0, gamma))
-        # print(f"**************************************************")
-        # print(f"rewards shape: {rewards.shape}, gamma: {gamma}")
         B, H, rew_dim = rewards.shape
-        # 确保rewards是2D [B, H]
         rewards_squeezed = rewards.squeeze(-1) if rew_dim == 1 else rewards.view(B, H)
         factors = (gamma ** torch.arange(H, device=rewards.device, dtype=rewards.dtype)).unsqueeze(0)
         return torch.sum(rewards_squeezed * factors, dim=1)  # [B]
 
     def best_of_n_sampling(self, obs: Tensor, N: int) -> Tensor:
-        """
-        Best-of-N采样实现
-        从行为策略采样N个候选动作序列，选择Q值最高的一个
-        """
         with torch.no_grad():
-            # 并行化采样N个候选动作序列
-            B = obs.shape[0]  # batch size
-            expanded_obs = obs.unsqueeze(1).repeat(1, N, 1).view(B * N, -1)  # [B*N, obs_dim]
-            
-            # 并行生成所有候选动作序列
-            candidates = self.actor.sample_mean_flow(expanded_obs, self.cfg.inference_steps)
-            candidates = candidates * self.actor.action_bound
-            
-            # 计算每个候选的Q值
-            # 并行计算所有候选的Q值
+            B = obs.shape[0]
+
+            expanded_obs = obs.unsqueeze(1).repeat(1, N, 1).view(B * N, -1)
+
+            candidates = self.actor.predict_action_chunk(expanded_obs, self.cfg.inference_steps)
+
             q1_values, q2_values = self.target_critic(expanded_obs, candidates)
-            q_values = torch.min(q1_values, q2_values).view(B, N)  # [B, N]
-            
-            # 选择Q值最高的候选
-            best_indices = torch.argmax(q_values, dim=1)  # [B]
-            
-            # 返回最佳候选动作序列
+            q_values = torch.min(q1_values, q2_values).view(B, N)
+
+            best_indices = torch.argmax(q_values, dim=1)
+
             candidates = candidates.view(B, N, self.cfg.pred_horizon, self.action_dim)
             batch_indices = torch.arange(B)
-            best_action_chunks = candidates[batch_indices, best_indices]  # [B, pred_horizon, action_dim]
+            best_action_chunks = candidates[batch_indices, best_indices]
             return best_action_chunks
 
-    def loss_critic(self, obs: Tensor, actions: Tensor, next_obs: Tensor,
-                    rewards: Tensor, terminated: Tensor, gamma: float) -> Tuple[Tensor, Dict]:
-        """
-        Critic损失计算
-        obs: [B, obs_dim] - 单个观测
-        actions: [B, H, A] - 动作序列
-        next_obs: [B, obs_dim] - 下一个观测
-        rewards: [B, H, 1] - 从t到t+H-1的奖励
-        terminated: [B, 1] - 终止标志
-        gamma: 折扣因子
-        """
-        B = obs.shape[0]
+    def loss_qf(self, obs: Tensor, actions: Tensor, next_obs: Tensor,
+                rewards: Tensor, terminated: Tensor) -> Tuple[Tensor, Dict]:
+        q1_pred, q2_pred = self.critic(obs, actions)
+        q1_pred = q1_pred.squeeze(-1)
+        q2_pred = q2_pred.squeeze(-1)
         with torch.no_grad():
-            # 使用目标网络计算下一状态的Q值 - 使用Best-of-N采样
-            next_actions = self.best_of_n_sampling(next_obs, self.cfg.N)
-            next_q1, next_q2 = self.target_critic(next_obs, next_actions)
-            next_q = torch.min(next_q1, next_q2).view(B)
+            target_vf_pred = self.vf(next_obs).squeeze(-1)
 
-            # 计算H步折扣回报（从t到t+H-1）
-            h_step_returns = self.discounted_returns(rewards, gamma)  # [B]
+            h_step_returns = self.discounted_returns(rewards, self.cfg.gamma)  # [B]
 
-            # 计算bootstrap项
-            done = terminated.view(-1).float()  # 终止标志 [B]
+            done = terminated.view(-1).float()
+            q_target = h_step_returns + (1. - done) * (self.cfg.gamma ** self.cfg.pred_horizon) * target_vf_pred
 
-            future_value = (1.0 - done) * (gamma ** self.cfg.pred_horizon) * next_q
+        qf1_loss = F.mse_loss(q1_pred, q_target)
+        qf2_loss = F.mse_loss(q2_pred, q_target)
+        qf_loss = qf1_loss + qf2_loss
 
-            # 正确的TD目标
-            target = h_step_returns + future_value  # [B]
+        info = {
+            'qf1_loss': qf1_loss.item(),
+            'qf2_loss': qf2_loss.item(),
+            'qf_loss': qf_loss.item(),
+            'q_mean': torch.mean(torch.min(q1_pred, q2_pred)).item(),
+        }
+        return qf_loss, info
 
-        # 计算当前Q值
-        q1, q2 = self.critic(obs, actions)  # [B,1]
-        q1, q2 = q1.view(B), q2.view(B)
+    def loss_vf(self, obs: Tensor, actions: Tensor) -> Tuple[Tensor, Dict]:
+        with torch.no_grad():
+            q1_pred, q2_pred = self.target_critic(obs, actions)
+            q_pred = torch.min(q1_pred, q2_pred).squeeze(-1).detach()
 
-        # TD损失
-        td_loss = F.mse_loss(q1, target) + F.mse_loss(q2, target)
+        vf_pred = self.vf(obs).squeeze(-1)
+        vf_err = vf_pred - q_pred
 
-        total = td_loss
-        info = dict(
-            td_loss=td_loss.item(),
-            total_critic_loss=total.item(),
-            q1_mean=q1.mean().item(),
-            q2_mean=q2.mean().item(),
-            target_mean=target.mean().item(),
-        )
-        return total, info
+        # 正确的分位数回归损失计算
+        quantile = self.cfg.quantile
+        vf_loss = torch.mean(torch.where(vf_err > 0,
+                                         quantile * vf_err,
+                                         (quantile - 1) * vf_err))
 
-    def loss_actor(self, obs: Tensor, action_batch: Tensor) -> Tuple[Tensor, Dict]:
-        """Actor损失计算"""
-        # 行为克隆损失
-        bc_loss = self.actor.flow_bc_loss(obs, action_batch)
+        info = {
+            'vf_loss': vf_loss.item(),
+            'v_mean': vf_pred.mean().item(),
+        }
+        return vf_loss, info
 
-        # Q引导损失 - 使用Best-of-N采样
-        actor_actions = self.best_of_n_sampling(obs, self.cfg.N)
-        q1, q2 = self.critic(obs, actor_actions)
-        q = torch.min(q1, q2)
-        q_loss = -q.mean()
+    def loss_policy(self, obs: Tensor, actions: Tensor) -> Tuple[Tensor, Dict]:
+        with torch.no_grad():
+            q1, q2 = self.critic(obs, actions)
+            q_pred = torch.min(q1, q2).squeeze(-1)
+            v_pred = self.vf(obs).squeeze(-1)
+            adv = q_pred - v_pred
 
-        # 计算当前BC损失权重
-        bc_weight = self.actor.get_bc_weight()
+        # 1. 计算优势加权的权重
+        # beta 是一个超参数，用于控制权重的尺度，可以设置在 config 中，例如 self.cfg.beta = 10.0
+        weights = torch.exp(adv / self.cfg.beta).detach()
+        # 2. 对权重进行裁剪，防止梯度爆炸
+        weights = torch.clamp(weights, max=100.0)
 
-        # Q损失权重为1 - BC权重
-        q_weight = 1.0 - bc_weight
+        # 3. 计算 BC 损失
+        bc_losses = self.actor.per_sample_flow_bc_loss(obs, actions)
 
-        # 组合损失函数
-        loss = q_weight * q_loss + bc_weight * bc_loss
-        info = dict(
-            loss_actor=loss.item(),
-            loss_bc_flow=bc_loss.item(),
-            q_loss=q_loss.item(),
-            q_mean=q.mean().item(),
-            bc_weight=bc_weight,  # 记录当前BC权重
-            q_weight=q_weight     # 记录当前Q权重
-        )
-        return loss, info
+        # 4. 计算加权后的策略损失
+        policy_loss = (weights * bc_losses).mean()
+
+        info = {
+            'policy_loss': policy_loss.item(),
+            'adv_mean': adv.mean().item(),
+            'bc_loss': bc_losses.mean().item(),
+            'adv_weights_mean': weights.mean().item(),  # 监控权重大小
+        }
+        return policy_loss, info
 
     def update_target(self, tau: float):
-        """目标网络软更新"""
         for tp, p in zip(self.target_critic.parameters(), self.critic.parameters()):
             tp.data.copy_(tp.data * (1 - tau) + p.data * tau)
 
 
-# ========= LightningModule (Auto-optim, official style) =========
-class LitConservativeMeanFQL(L.LightningModule):
+# ========= LightningModule (Manual optim for different networks) =========
+class LitMeanFQL(L.LightningModule):
     def __init__(self, obs_dim: int, action_dim: int, cfg: Config):
         super().__init__()
         self.save_hyperparameters()
         self.cfg = cfg
-        self.net = ConservativeMeanFQL(obs_dim, action_dim, cfg)
-        # 禁用自动优化，因为我们使用多个优化器和频率控制
-        self.automatic_optimization = False
+        self.net = MeanFQL(obs_dim, action_dim, cfg)
+        self.automatic_optimization = True
+
 
     def forward(self, obs: Tensor) -> Tensor:
-        """前向传播：使用优化的Best-of-N采样预测动作"""
-        # 使用优化后的Best-of-N采样方法来预测动作
         return self.net.best_of_n_sampling(obs, self.cfg.N)
 
     def training_step(self, batch: Dict[str, Tensor], batch_idx: int):
         device = self.device
 
-        # 使用单个观测而不是观测序列
-        obs = batch["observations"].float().to(device)  # [B, obs_dim]
-        obs = obs.squeeze(1)  # 从 [B, 1, obs_dim] 转换为 [B, obs_dim]
-        actions = batch["action_chunks"].float().to(device)  # [B, H, A]
-        next_obs = batch["next_observations"].float().to(device)  # [B, obs_dim]
-        next_obs = next_obs.squeeze(1)  # 从 [B, 1, obs_dim] 转换为 [B, obs_dim]
-        rewards = batch["rewards"].float().to(device)  # [B, H]
-        terminated = batch["terminations"].float().to(device)  # [B, 1]
+        obs = batch["observations"].float().to(device)
+        obs = obs.squeeze(1) if obs.dim() > 2 else obs
+        actions = batch["action_chunks"].float().to(device)
+        next_obs = batch["next_observations"].float().to(device)
+        next_obs = next_obs.squeeze(1) if next_obs.dim() > 2 else next_obs
+        rewards = batch["rewards"].float().to(device)
+        rewards = rewards.unsqueeze(-1) if rewards.dim() == 2 else rewards
+        terminated = batch["terminations"].float().to(device)
 
-        # 获取优化器
-        opt_c, opt_a = self.optimizers()
+        qf_loss, qf_info = self.net.loss_qf(obs, actions, next_obs, rewards, terminated)
+        vf_loss, vf_info = self.net.loss_vf(obs, actions)
+        policy_loss, policy_info = self.net.loss_policy(obs, actions)
 
-        # Critic step
-        self.toggle_optimizer(opt_c)
-        loss_c, info_c = self.net.loss_critic(
-            obs, actions, next_obs, rewards, terminated, self.cfg.gamma
-        )
-        self.log("critic/loss", loss_c, on_step=True, prog_bar=True)
-        for k, v in info_c.items():
-            self.log(f"critic/{k}", v, on_step=True)
-        opt_c.zero_grad()
-        self.manual_backward(loss_c)
-        if self.cfg.grad_clip_value:
-            self.clip_gradients(opt_c, gradient_clip_val=self.cfg.grad_clip_value, gradient_clip_algorithm="norm")
-        opt_c.step()
-        self.untoggle_optimizer(opt_c)
+        total_loss = qf_loss*0.1 + vf_loss*10 + policy_loss
+        self.log("train/loss", total_loss, on_step=True, prog_bar=True)
+        info = {**qf_info, **vf_info, **policy_info}
+        for k, v in info.items():
+            self.log(f"train/{k}", v, on_step=True, prog_bar=False)
 
-        # Actor step - 控制 actor 更新频率：仅每 N 个 batch 更新
-        if (batch_idx % self.cfg.actor_update_freq) == 0:
-            self.toggle_optimizer(opt_a)
-            loss_a, info_a = self.net.loss_actor(obs, actions)
-            self.log("actor/loss", loss_a, on_step=True, prog_bar=True)
-            for k, v in info_a.items():
-                self.log(f"actor/{k}", v, on_step=True)
-            opt_a.zero_grad()
-            self.manual_backward(loss_a)
-            if self.cfg.grad_clip_value:
-                self.clip_gradients(opt_a, gradient_clip_val=self.cfg.grad_clip_value, gradient_clip_algorithm="norm")
-            opt_a.step()
-            self.untoggle_optimizer(opt_a)
+        return total_loss
 
-        return {"loss": loss_c}
+
+
 
     def validation_step(self, batch: Dict[str, Tensor], batch_idx: int):
         device = self.device
 
-        # 使用单个观测而不是观测序列
         obs = batch["observations"].float().to(device)
-        obs = obs.squeeze(1)  # 从 [B, 1, obs_dim] 转换为 [B, obs_dim]
+        obs = obs.squeeze(1) if obs.dim() > 2 else obs
         actions = batch["action_chunks"].float().to(device)
         next_obs = batch["next_observations"].float().to(device)
-        next_obs = next_obs.squeeze(1)  # 从 [B, 1, obs_dim] 转换为 [B, obs_dim]
+        next_obs = next_obs.squeeze(1) if next_obs.dim() > 2 else next_obs
         rewards = batch["rewards"].float().to(device)
+        rewards = rewards.unsqueeze(-1) if rewards.dim() == 2 else rewards
         terminated = batch["terminations"].float().to(device)
 
-        # 评估critic loss
-        val_loss, info = self.net.loss_critic(obs, actions, next_obs, rewards, terminated, self.cfg.gamma)
-        self.log("val/critic_loss", val_loss, on_step=False, on_epoch=True, prog_bar=True)
+        qf_loss, qf_info = self.net.loss_qf(obs, actions, next_obs, rewards, terminated)
+        vf_loss, vf_info = self.net.loss_vf(obs, actions)
+        policy_loss, policy_info = self.net.loss_policy(obs, actions)
 
-        # 评估actor loss
-        val_actor_loss, actor_info = self.net.loss_actor(obs, actions)
-        self.log("val/actor_loss", val_actor_loss, on_step=False, on_epoch=True, prog_bar=True)
+        val_loss = qf_loss + vf_loss + policy_loss
+        self.log("val/loss", val_loss, on_step=False, on_epoch=True, prog_bar=True)
 
-        # 获取BC权重
-        bc_weight = actor_info.get("bc_weight", 0.0)  # 默认为0.0，如果不存在则使用该值
-        self.log("val/bc_weight", bc_weight, on_step=False, on_epoch=True, prog_bar=True)
-
-        # 记录奖励
         self.log("val/reward", rewards.mean(), on_step=False, on_epoch=True, prog_bar=True)
 
-        # 记录其他指标
+        info = {**qf_info, **vf_info, **policy_info}
         for k, v in info.items():
-            self.log(f"val/critic_{k}", v, on_step=False, on_epoch=True)
-        for k, v in actor_info.items():
-            self.log(f"val/actor_{k}", v, on_step=False, on_epoch=True)
+            self.log(f"train/{k}", v, on_step=True, prog_bar=False)
 
         return val_loss
 
     def test_step(self, batch: Dict[str, Tensor], batch_idx: int):
         obs = batch["observations"].float().to(self.device)
-        obs = obs.squeeze(1)  # 从 [B, 1, obs_dim] 转换为 [B, obs_dim]
+        obs = obs.squeeze(1) if obs.dim() > 2 else obs
         predicted_actions = self(obs)
         actual_actions = batch["action_chunks"].float().to(self.device)
-        # 只比较第一个动作
         action_mse = F.mse_loss(predicted_actions, actual_actions)
         self.log("test/action_mse", action_mse, on_step=False, on_epoch=True)
         return action_mse
 
     def on_train_batch_end(self, outputs, batch, batch_idx):
-        # 目标网络软更新（按频率）
         if (batch_idx % self.cfg.target_update_freq) == 0:
             self.net.update_target(self.cfg.tau)
 
     def configure_optimizers(self):
-        opt_c = optim.Adam(self.net.critic.parameters(), lr=self.cfg.learning_rate)
-        opt_a = optim.Adam(self.net.actor.parameters(), lr=self.cfg.learning_rate)
-        sched_c = optim.lr_scheduler.StepLR(opt_c, step_size=10, gamma=0.1)
-        sched_a = optim.lr_scheduler.StepLR(opt_a, step_size=10, gamma=0.1)
-        return (
-            {"optimizer": opt_c, "lr_scheduler": {"scheduler": sched_c, "interval": "epoch"}},
-            {"optimizer": opt_a, "lr_scheduler": {"scheduler": sched_a, "interval": "epoch"}},
-        )
+        # 使用统一的优化器来优化整个网络
+        optimizer = optim.Adam(self.net.parameters(), lr=self.cfg.learning_rate)
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+        return [optimizer], [scheduler]
+

@@ -21,8 +21,8 @@ class Config:
     # 序列参数
     obs_horizon: int = 1  # 观测序列长度，设置为1表示只使用当前观测
     pred_horizon: int = 16
-    action_horizon: int = 2
-    inference_steps: int = 1
+    # action_horizon: int = 2
+    inference_steps: int = 1  # 推理步数
     window_stride: int = 1  # 滑动窗口步长
     
     # 模型参数
@@ -36,15 +36,22 @@ class Config:
     target_update_freq: int = 1
     actor_update_freq: int = 1
     
-    # CQL参数
-    cql_alpha: float = 1.0
-    cql_temp: float = 1.0
-    cql_num_samples: int = 10
-    
+
     # BC损失权重衰减参数
     bc_loss_initial_weight: float = 1.0  # BC损失初始权重
-    bc_loss_final_weight: float = 0.1    # BC损失最终权重
-    bc_loss_decay_steps: int = 10000     # 衰减步数
+    bc_loss_final_weight: float = 0.01    # BC损失最终权重
+    bc_loss_decay_steps: int = 1000     # 衰减步数
+    
+    # IQL相关参数
+    quantile: float = 0.8  # IQL分位数参数
+    beta: float = 3.0      # IQL优势权重参数
+    clip_score: float = 100.0  # 分数裁剪值
+
+    
+    # 更新频率参数
+    q_update_period: int = 2
+    v_update_period: int = 2
+    policy_update_period: int = 1
     
     # 其他参数
     normalize_q_loss: bool = False
@@ -60,7 +67,6 @@ class Config:
     # Accelerator相关参数
     mixed_precision: str = "no"
     gradient_accumulation_steps: int = 1
-
 
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     
