@@ -44,7 +44,7 @@ class Config:
     
 
     # CQL参数
-    cql_alpha: float = 1.0
+    cql_alpha: float = 100.0
     cql_temp: float = 1.0
     cql_num_samples: int = 10
 

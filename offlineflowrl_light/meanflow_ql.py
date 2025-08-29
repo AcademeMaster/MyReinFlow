@@ -301,11 +301,11 @@ class MeanFQL(nn.Module):
         # CQL损失计算
         cql1 = torch.logsumexp(q1s / temp, dim=1).mean() * temp - q1.mean()
         cql2 = torch.logsumexp(q2s / temp, dim=1).mean() * temp - q2.mean()
-        cql_loss = (cql1 + cql2) * self.cfg.cql_alpha
+        cql_loss = (cql1 + cql2) * self.cfg.cql_alpha # cql_alpha大概在100
 
 
         # 总损失
-        total_loss =  cql_loss
+        total_loss = td_loss + cql_loss
 
         info = dict(
             td_loss=td_loss.item(),

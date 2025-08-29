@@ -138,11 +138,9 @@ class LitMeanFQL(L.LightningModule):
 
         # 计算总损失
         validation_loss = critic_loss + policy_loss
-        self.log("val/loss", validation_loss.item(), on_step=False, on_epoch=True, prog_bar=True)
 
         # 记录奖励和详细信息
         self.log("val/reward", rewards.mean(), on_step=False, on_epoch=True, prog_bar=True)
-
         info = {**critic_info, **policy_info}
         for key, value in info.items():
             self.log(f"val/{key}", value, on_step=False, on_epoch=True, prog_bar=False)
