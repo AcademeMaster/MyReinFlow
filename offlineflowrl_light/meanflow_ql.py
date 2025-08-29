@@ -104,14 +104,8 @@ class MeanTimeCondFlow(nn.Module):
 
         joint_in = hidden_dim + hidden_dim + time_dim + time_dim
         self.net = nn.Sequential(
-            nn.Linear(joint_in, hidden_dim * 2),
-            nn.LayerNorm(hidden_dim * 2),  # 添加Norm
-            nn.SiLU(),
-            nn.Linear(hidden_dim * 2, hidden_dim),
-            nn.LayerNorm(hidden_dim),
-            nn.SiLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.LayerNorm(hidden_dim),
+            nn.Linear(joint_in, hidden_dim),
+            nn.LayerNorm(hidden_dim),  # 添加Norm
             nn.SiLU(),
             nn.Linear(hidden_dim, action_dim),
         )
@@ -301,9 +295,8 @@ class MeanFQL(nn.Module):
         # CQL损失计算
         cql1 = torch.logsumexp(q1s / temp, dim=1).mean() * temp - q1.mean()
         cql2 = torch.logsumexp(q2s / temp, dim=1).mean() * temp - q2.mean()
+
         cql_loss = (cql1 + cql2) * self.cfg.cql_alpha # cql_alpha大概在100
-
-
         # 总损失
         total_loss = td_loss + cql_loss
 

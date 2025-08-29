@@ -141,6 +141,7 @@ class LitMeanFQL(L.LightningModule):
 
         # 记录奖励和详细信息
         self.log("val/reward", rewards.mean(), on_step=False, on_epoch=True, prog_bar=True)
+        self.log("val/loss", validation_loss, on_step=False, on_epoch=True, prog_bar=True)
         info = {**critic_info, **policy_info}
         for key, value in info.items():
             self.log(f"val/{key}", value, on_step=False, on_epoch=True, prog_bar=False)
