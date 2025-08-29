@@ -1,16 +1,11 @@
 import copy
-from collections import deque
+from typing import Dict, Tuple
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 from torch.autograd.functional import jvp
-from torch.utils.data import Dataset, DataLoader
-import lightning as L
-from torch import optim
-from typing import Dict, Tuple, Any, Optional, List
 
 from config import Config
 
@@ -24,13 +19,15 @@ class FeatureEmbedding(nn.Module):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
+            nn.LayerNorm(hidden_dim),  # 添加LayerNorm，提升稳定性
             nn.SiLU(),
             nn.Linear(hidden_dim, hidden_dim),
+            nn.LayerNorm(hidden_dim),
+            nn.SiLU(),  # 添加激活，提升非线性
         )
 
     def forward(self, x: Tensor) -> Tensor:
         return self.net(x)
-
 
 class TimeEmbedding(nn.Module):
     """sin/cos time embedding + MLP"""
@@ -43,9 +40,11 @@ class TimeEmbedding(nn.Module):
         freqs = 1.0 / (max_period ** exponents)
         self.register_buffer("freqs", freqs, persistent=False)
         self.mlp = nn.Sequential(
+            nn.Linear(time_dim, time_dim),
+            nn.SiLU(),
             nn.Linear(time_dim, time_dim * 2),
             nn.SiLU(),
-            nn.Linear(time_dim * 2, time_dim),
+            nn.Linear(time_dim * 2, time_dim),  # 调整为更对称结构，避免瓶颈
         )
         self.time_dim = time_dim
 
@@ -54,7 +53,6 @@ class TimeEmbedding(nn.Module):
         args = t.unsqueeze(-1) * self.freqs.unsqueeze(0)  # [B, half]
         enc = torch.cat([torch.sin(args), torch.cos(args)], dim=-1)  # [B, time_dim]
         return self.mlp(enc)
-
 
 # ========= Critic (Double Q over obs + action-chunk) =========
 class DoubleCriticObsAct(nn.Module):
@@ -70,9 +68,11 @@ class DoubleCriticObsAct(nn.Module):
         def make_net():
             return nn.Sequential(
                 nn.Linear(hidden_dim + self.total_action_dim, hidden_dim),
-                nn.ReLU(),
+                nn.LayerNorm(hidden_dim),  # 添加Norm
+                nn.SiLU(),  # 统一为SiLU
                 nn.Linear(hidden_dim, hidden_dim),
-                nn.ReLU(),
+                nn.LayerNorm(hidden_dim),
+                nn.SiLU(),
                 nn.Linear(hidden_dim, 1),
             )
 
@@ -80,39 +80,13 @@ class DoubleCriticObsAct(nn.Module):
         self.q2 = make_net()
 
     def _prep(self, obs: Tensor, actions: Tensor) -> Tensor:
-        if actions.dim() == 3:
-            act = actions.reshape(actions.shape[0], -1)
-        elif actions.dim() == 2:
-            act = actions
-        else:
-            raise ValueError(f"bad actions dim={actions.dim()}")
-
+        act = actions.view(actions.shape[0], -1)  # 统一展平，支持dim=2或3
         obs_encoded = self.obs_encoder(obs)
-
         return torch.cat([obs_encoded, act], dim=-1)
 
     def forward(self, obs: Tensor, actions: Tensor) -> Tuple[Tensor, Tensor]:
         x = self._prep(obs, actions)
         return self.q1(x), self.q2(x)
-
-
-# ========= Value Function (V over obs) =========
-class ValueFunction(nn.Module):
-    def __init__(self, obs_dim: int, hidden_dim: int):
-        super().__init__()
-        self.obs_encoder = FeatureEmbedding(obs_dim, hidden_dim)
-        self.net = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, 1),
-        )
-
-    def forward(self, obs: Tensor) -> Tensor:
-        obs_encoded = self.obs_encoder(obs)
-        return self.net(obs_encoded)
-
 
 # ========= Time-conditioned flow model (predicts velocity [B,H,A]) =========
 class MeanTimeCondFlow(nn.Module):
@@ -121,7 +95,7 @@ class MeanTimeCondFlow(nn.Module):
         super().__init__()
         self.obs_dim, self.action_dim = obs_dim, action_dim
         self.pred_horizon = pred_horizon
-        self.obs_horizon = obs_horizon
+        self.obs_horizon = obs_horizon  # TODO: 若obs_horizon>1，可添加序列encoder
 
         self.t_embed = TimeEmbedding(time_dim)
         self.r_embed = TimeEmbedding(time_dim)
@@ -131,33 +105,25 @@ class MeanTimeCondFlow(nn.Module):
         joint_in = hidden_dim + hidden_dim + time_dim + time_dim
         self.net = nn.Sequential(
             nn.Linear(joint_in, hidden_dim * 2),
+            nn.LayerNorm(hidden_dim * 2),  # 添加Norm
             nn.SiLU(),
             nn.Linear(hidden_dim * 2, hidden_dim),
+            nn.LayerNorm(hidden_dim),
             nn.SiLU(),
             nn.Linear(hidden_dim, hidden_dim),
+            nn.LayerNorm(hidden_dim),
             nn.SiLU(),
             nn.Linear(hidden_dim, action_dim),
         )
 
     def _norm_z(self, z: Tensor) -> Tensor:
+        # 简化：假设输入已norm，或用view
         if z.dim() == 3: return z
-        if z.dim() == 2 and z.shape[1] == self.pred_horizon * self.action_dim:
-            return z.view(z.shape[0], self.pred_horizon, self.action_dim)
-        if z.dim() == 1:
-            return z.view(1, self.pred_horizon,
-                          self.action_dim) if z.numel() == self.pred_horizon * self.action_dim else z.view(1, 1,
-                                                                                                           self.action_dim)
-        raise ValueError(f"bad z shape: {z.shape}")
+        return z.view(z.shape[0], self.pred_horizon, self.action_dim) if z.dim() == 2 else z.view(1, -1, self.action_dim)
 
     @staticmethod
     def _norm_time(t: Tensor, B: int) -> Tensor:
-        if t.dim() == 0: return t.new_full((B,), float(t))
-        if t.dim() == 1:
-            if t.numel() == B: return t
-            if t.numel() == 1: return t.repeat(B)
-            t = t.view(-1)
-            return t[:B] if t.numel() >= B else torch.cat([t, t.new_zeros(B - t.numel())], dim=0)
-        return t.view(-1)[:B]
+        return t.view(-1)[:B].expand(B) if t.numel() == 1 else t.view(-1)[:B]
 
     def forward(self, obs: Tensor, z: Tensor, r: Tensor, t: Tensor) -> Tensor:
         z = self._norm_z(z)
@@ -165,20 +131,14 @@ class MeanTimeCondFlow(nn.Module):
         t = self._norm_time(t, B)
         r = self._norm_time(r, B)
 
-        te = self.t_embed(t)  # [B, Td]
-        re = self.r_embed(r)  # [B, Td]
+        te = self.t_embed(t)[:, None, :].expand(B, H, -1)  # 优化broadcast
+        re = self.r_embed(r)[:, None, :].expand(B, H, -1)
+        obs_encoded = self.obs_encoder(obs)[:, None, :].expand(B, H, -1)
 
-        obs_encoded = self.obs_encoder(obs)  # [B, hidden_dim]
+        ne = self.noise_embed(z.view(B * H, A)).view(B, H, -1)
 
-        ne = self.noise_embed(z.reshape(B * H, A)).view(B, H, -1)  # [B,H,Hd]
-
-        te = te.unsqueeze(1).repeat(1, H, 1)
-        re = re.unsqueeze(1).repeat(1, H, 1)
-        obs_encoded = obs_encoded.unsqueeze(1).repeat(1, H, 1)  # [B, H, hidden_dim]
-
-        x = torch.cat([obs_encoded, ne, re, te], dim=-1)  # [B,H,*]
-        return self.net(x)  # [B,H,A]
-
+        x = torch.cat([obs_encoded, ne, re, te], dim=-1)
+        return self.net(x)
 
 # ========= Actor (MeanFlow) =========
 class MeanFlowActor(nn.Module):
@@ -200,22 +160,21 @@ class MeanFlowActor(nn.Module):
         r = torch.rand(n, device=device) * t
         return t, r
 
+    @torch.no_grad()
     def predict_action_chunk(self, obs: Tensor, n_steps: int = 1) -> Tensor:
         self.model.eval()
         device = next(self.parameters()).device
         obs = obs.to(device)
-
-        with torch.no_grad():
-            action_chunk = self.sample_mean_flow(obs, n_steps=n_steps)
-            return torch.clamp(action_chunk, -self.action_scale, self.action_scale)
+        action_chunk = self.sample_mean_flow(obs, n_steps=n_steps)
+        return torch.clamp(action_chunk, -self.action_scale, self.action_scale)
 
     def sample_mean_flow(self, obs: Tensor, n_steps: int = 1) -> Tensor:
         """使用单个观测进行均值流采样"""
         device = next(self.parameters()).device
         obs = obs.to(device)
 
-        # 使用均匀分布初始化动作序列，范围[-action_scale, action_scale]
-        x = (torch.rand(obs.size(0), self.pred_horizon, self.action_dim, device=device) - 0.5) * 2 * self.action_scale
+
+        x = torch.randn(obs.size(0), self.pred_horizon, self.action_dim, device=device)
         n_steps = max(1, int(n_steps))
         dt = 1.0 / n_steps
 
@@ -224,7 +183,7 @@ class MeanFlowActor(nn.Module):
             t = torch.full((x.shape[0],), i * dt, device=device)
             v = self.model(obs, x, r, t)
             x = x - v * dt
-
+        x.clamp(-self.action_scale, self.action_scale)
         return x
 
     def per_sample_flow_bc_loss(self, obs: Tensor, action_chunk: Tensor) -> Tensor:
@@ -235,9 +194,8 @@ class MeanFlowActor(nn.Module):
         z = (1 - t.view(-1, 1, 1)) * action_chunk + t.view(-1, 1, 1) * z0
         v = z0 - action_chunk
 
-        obs = obs.requires_grad_(True)
+
         z = z.requires_grad_(True)
-        r = r.requires_grad_(True)
         t = t.requires_grad_(True)
 
         v_obs = torch.zeros_like(obs)
@@ -256,7 +214,7 @@ class MeanFlowActor(nn.Module):
         return losses
 
 
-# ========= Whole RL model (Actor + Double Q + V + targets) =========
+# ========= Whole RL model (Actor + Double Q ) =========
 class MeanFQL(nn.Module):
     def __init__(self, obs_dim: int, action_dim: int, cfg: Config):
         super().__init__()
@@ -270,14 +228,17 @@ class MeanFQL(nn.Module):
         for p in self.target_critic.parameters():
             p.requires_grad = False
 
-        self.vf = ValueFunction(obs_dim, cfg.hidden_dim)
-
     def discounted_returns(self, rewards: Tensor, gamma: float) -> Tensor:
         gamma = max(0.0, min(1.0, gamma))
         B, H, rew_dim = rewards.shape
+        
+        # 确保rewards的形状为[B, H]
         rewards_squeezed = rewards.squeeze(-1) if rew_dim == 1 else rewards.view(B, H)
+        # 创建折扣因子
         factors = (gamma ** torch.arange(H, device=rewards.device, dtype=rewards.dtype)).unsqueeze(0)
-        return torch.sum(rewards_squeezed * factors, dim=1)  # [B]
+        # 计算加权回报
+        weighted_returns = torch.sum(rewards_squeezed * factors, dim=1)  # [B]
+        return weighted_returns  # [B]
 
     def best_of_n_sampling(self, obs: Tensor, N: int) -> Tensor:
         with torch.no_grad():
@@ -285,178 +246,92 @@ class MeanFQL(nn.Module):
 
             expanded_obs = obs.unsqueeze(1).repeat(1, N, 1).view(B * N, -1)
 
-            candidates = self.actor.predict_action_chunk(expanded_obs, self.cfg.inference_steps)
+            candidates = self.actor.sample_mean_flow(expanded_obs, self.cfg.inference_steps)
 
             q1_values, q2_values = self.target_critic(expanded_obs, candidates)
             q_values = torch.min(q1_values, q2_values).view(B, N)
-
             best_indices = torch.argmax(q_values, dim=1)
-
             candidates = candidates.view(B, N, self.cfg.pred_horizon, self.action_dim)
             batch_indices = torch.arange(B)
             best_action_chunks = candidates[batch_indices, best_indices]
             return best_action_chunks
 
-    def loss_qf(self, obs: Tensor, actions: Tensor, next_obs: Tensor,
-                rewards: Tensor, terminated: Tensor) -> Tuple[Tensor, Dict]:
-        q1_pred, q2_pred = self.critic(obs, actions)
-        q1_pred = q1_pred.squeeze(-1)
-        q2_pred = q2_pred.squeeze(-1)
-        with torch.no_grad():
-            target_vf_pred = self.vf(next_obs).squeeze(-1)
+    def loss_critic(self, obs: Tensor, actions: Tensor, next_obs: Tensor,
+                    rewards: Tensor, dones: Tensor) -> Tuple[Tensor, Dict]:
+        B = obs.shape[0]
 
+        # 使用no_grad计算得到一个固定
+        with torch.no_grad():
+            # 使用目标网络计算下一状态的Q值
+            next_actions = self.actor.sample_mean_flow(next_obs)
+            next_q1, next_q2 = self.target_critic(next_obs, next_actions)
+            next_q = torch.min(next_q1, next_q2).view(B)
+
+            # 计算H步折扣回报（从t到t+H-1）
             h_step_returns = self.discounted_returns(rewards, self.cfg.gamma)  # [B]
+            # 计算bootstrap项
+            done = dones.view(-1).float()  # 终止标志 [B]
 
-            done = terminated.view(-1).float()
-            q_target = h_step_returns + (1. - done) * (self.cfg.gamma ** self.cfg.pred_horizon) * target_vf_pred
+            future_value = (1.0 - done) * (self.cfg.gamma ** self.cfg.pred_horizon) * next_q
 
-        qf1_loss = F.mse_loss(q1_pred, q_target)
-        qf2_loss = F.mse_loss(q2_pred, q_target)
-        qf_loss = qf1_loss + qf2_loss
+            # 正确的TD目标
+            target = h_step_returns + future_value  # [B]
 
-        info = {
-            'qf1_loss': qf1_loss.item(),
-            'qf2_loss': qf2_loss.item(),
-            'qf_loss': qf_loss.item(),
-            'q_mean': torch.mean(torch.min(q1_pred, q2_pred)).item(),
-        }
-        return qf_loss, info
+        # 计算当前Q值
+        q1, q2 = self.critic(obs, actions)  # [B,1]
+        q1, q2 = q1.view(B), q2.view(B)
 
-    def loss_vf(self, obs: Tensor, actions: Tensor) -> Tuple[Tensor, Dict]:
-        with torch.no_grad():
-            q1_pred, q2_pred = self.target_critic(obs, actions)
-            q_pred = torch.min(q1_pred, q2_pred).squeeze(-1).detach()
+        # TD损失
+        td_loss = F.mse_loss(q1, target) + F.mse_loss(q2, target)
 
-        vf_pred = self.vf(obs).squeeze(-1)
-        vf_err = vf_pred - q_pred
 
-        # 正确的分位数回归损失计算
-        quantile = self.cfg.quantile
-        vf_loss = torch.mean(torch.where(vf_err > 0,
-                                         quantile * vf_err,
-                                         (quantile - 1) * vf_err))
 
-        info = {
-            'vf_loss': vf_loss.item(),
-            'v_mean': vf_pred.mean().item(),
-        }
-        return vf_loss, info
+        # CQL正则项
+        num_samples = self.cfg.cql_num_samples
+        rep_obs = obs.repeat_interleave(num_samples, dim=0)
+        # 使用rand_like生成与actions相同形状的随机张量，然后进行缩放以匹配动作空间
+        sampled_actions = torch.rand_like(actions.repeat_interleave(num_samples, dim=0),
+                                         device=obs.device) *2.0*self.actor.action_scale-self.actor.action_scale
+        # 计算采样动作的Q值
+        q1s, q2s = self.critic(rep_obs, sampled_actions)
+        q1s = q1s.view(B, num_samples)
+        q2s = q2s.view(B, num_samples)
+
+        temp = self.cfg.cql_temp
+        # CQL损失计算
+        cql1 = torch.logsumexp(q1s / temp, dim=1).mean() * temp - q1.mean()
+        cql2 = torch.logsumexp(q2s / temp, dim=1).mean() * temp - q2.mean()
+        cql_loss = (cql1 + cql2) * self.cfg.cql_alpha
+
+
+        # 总损失
+        total_loss =  cql_loss
+
+        info = dict(
+            td_loss=td_loss.item(),
+            cql_loss=cql_loss.item(),
+        )
+        return total_loss, info
 
     def loss_policy(self, obs: Tensor, actions: Tensor) -> Tuple[Tensor, Dict]:
-        with torch.no_grad():
-            q1, q2 = self.critic(obs, actions)
-            q_pred = torch.min(q1, q2).squeeze(-1)
-            v_pred = self.vf(obs).squeeze(-1)
-            adv = q_pred - v_pred
+        # 使用当前critic而不是target critic来计算优势
+        predict_actions = self.actor.sample_mean_flow(obs, self.cfg.inference_steps)
+        q1, q2 = self.critic(obs, predict_actions)
+        q_value = torch.min(q1, q2).view(-1)
 
-        # 1. 计算优势加权的权重
-        # beta 是一个超参数，用于控制权重的尺度，可以设置在 config 中，例如 self.cfg.beta = 10.0
-        weights = torch.exp(adv / self.cfg.beta).detach()
-        # 2. 对权重进行裁剪，防止梯度爆炸
-        weights = torch.clamp(weights, max=100.0)
-
-        # 3. 计算 BC 损失
+        q_loss = -q_value.mean()  # 使用均值确保是标量
         bc_losses = self.actor.per_sample_flow_bc_loss(obs, actions)
 
-        # 4. 计算加权后的策略损失
-        policy_loss = (weights * bc_losses).mean()
-
+        policy_loss = (bc_losses*0 + q_loss).mean()
         info = {
             'policy_loss': policy_loss.item(),
-            'adv_mean': adv.mean().item(),
             'bc_loss': bc_losses.mean().item(),
-            'adv_weights_mean': weights.mean().item(),  # 监控权重大小
+            'q_loss': q_loss.item(),
         }
         return policy_loss, info
 
     def update_target(self, tau: float):
-        for tp, p in zip(self.target_critic.parameters(), self.critic.parameters()):
-            tp.data.copy_(tp.data * (1 - tau) + p.data * tau)
-
-
-# ========= LightningModule (Manual optim for different networks) =========
-class LitMeanFQL(L.LightningModule):
-    def __init__(self, obs_dim: int, action_dim: int, cfg: Config):
-        super().__init__()
-        self.save_hyperparameters()
-        self.cfg = cfg
-        self.net = MeanFQL(obs_dim, action_dim, cfg)
-        self.automatic_optimization = True
-
-
-    def forward(self, obs: Tensor) -> Tensor:
-        return self.net.best_of_n_sampling(obs, self.cfg.N)
-
-    def training_step(self, batch: Dict[str, Tensor], batch_idx: int):
-        device = self.device
-
-        obs = batch["observations"].float().to(device)
-        obs = obs.squeeze(1) if obs.dim() > 2 else obs
-        actions = batch["action_chunks"].float().to(device)
-        next_obs = batch["next_observations"].float().to(device)
-        next_obs = next_obs.squeeze(1) if next_obs.dim() > 2 else next_obs
-        rewards = batch["rewards"].float().to(device)
-        rewards = rewards.unsqueeze(-1) if rewards.dim() == 2 else rewards
-        terminated = batch["terminations"].float().to(device)
-
-        qf_loss, qf_info = self.net.loss_qf(obs, actions, next_obs, rewards, terminated)
-        vf_loss, vf_info = self.net.loss_vf(obs, actions)
-        policy_loss, policy_info = self.net.loss_policy(obs, actions)
-
-        total_loss = qf_loss*0.1 + vf_loss*10 + policy_loss
-        self.log("train/loss", total_loss, on_step=True, prog_bar=True)
-        info = {**qf_info, **vf_info, **policy_info}
-        for k, v in info.items():
-            self.log(f"train/{k}", v, on_step=True, prog_bar=False)
-
-        return total_loss
-
-
-
-
-    def validation_step(self, batch: Dict[str, Tensor], batch_idx: int):
-        device = self.device
-
-        obs = batch["observations"].float().to(device)
-        obs = obs.squeeze(1) if obs.dim() > 2 else obs
-        actions = batch["action_chunks"].float().to(device)
-        next_obs = batch["next_observations"].float().to(device)
-        next_obs = next_obs.squeeze(1) if next_obs.dim() > 2 else next_obs
-        rewards = batch["rewards"].float().to(device)
-        rewards = rewards.unsqueeze(-1) if rewards.dim() == 2 else rewards
-        terminated = batch["terminations"].float().to(device)
-
-        qf_loss, qf_info = self.net.loss_qf(obs, actions, next_obs, rewards, terminated)
-        vf_loss, vf_info = self.net.loss_vf(obs, actions)
-        policy_loss, policy_info = self.net.loss_policy(obs, actions)
-
-        val_loss = qf_loss + vf_loss + policy_loss
-        self.log("val/loss", val_loss, on_step=False, on_epoch=True, prog_bar=True)
-
-        self.log("val/reward", rewards.mean(), on_step=False, on_epoch=True, prog_bar=True)
-
-        info = {**qf_info, **vf_info, **policy_info}
-        for k, v in info.items():
-            self.log(f"train/{k}", v, on_step=True, prog_bar=False)
-
-        return val_loss
-
-    def test_step(self, batch: Dict[str, Tensor], batch_idx: int):
-        obs = batch["observations"].float().to(self.device)
-        obs = obs.squeeze(1) if obs.dim() > 2 else obs
-        predicted_actions = self(obs)
-        actual_actions = batch["action_chunks"].float().to(self.device)
-        action_mse = F.mse_loss(predicted_actions, actual_actions)
-        self.log("test/action_mse", action_mse, on_step=False, on_epoch=True)
-        return action_mse
-
-    def on_train_batch_end(self, outputs, batch, batch_idx):
-        if (batch_idx % self.cfg.target_update_freq) == 0:
-            self.net.update_target(self.cfg.tau)
-
-    def configure_optimizers(self):
-        # 使用统一的优化器来优化整个网络
-        optimizer = optim.Adam(self.net.parameters(), lr=self.cfg.learning_rate)
-        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
-        return [optimizer], [scheduler]
-
+        for target_param, source_param in zip(self.target_critic.parameters(), self.critic.parameters()):
+            target_param.data.copy_(
+                source_param.data * tau + target_param.data * (1.0 - tau)
+            )

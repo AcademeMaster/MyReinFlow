@@ -13,30 +13,30 @@ import os
 import glob
 
 from config import Config
-from meanflow_ql import LitConservativeMeanFQL
+# from meanflow_ql import LitMeanFQL
+from light_config import LitMeanFQL
 
-
-def find_latest_checkpoint(checkpoint_dir="checkpoints/meanflow_ql"):
+def find_latest_checkpoint(checkpoint_dir="checkpoint_t"):
     """查找最新的检查点文件"""
     if not os.path.exists(checkpoint_dir):
         return None
-    
+
     # 查找所有.ckpt文件
     checkpoint_files = glob.glob(os.path.join(checkpoint_dir, "**", "*.ckpt"), recursive=True)
-    
+
     if not checkpoint_files:
         return None
-    
+
     # 按修改时间排序，返回最新的
     latest_checkpoint = max(checkpoint_files, key=os.path.getmtime)
     return latest_checkpoint
 
 
-def evaluate_online(model: LitConservativeMeanFQL, config: Config, render_mode: str = "human"):
+def evaluate_online(model: LitMeanFQL, config: Config, render_mode: str = "human"):
     """Online evaluation in the environment"""
     # 使用Minari数据集的恢复环境功能
     minari_dataset = minari.load_dataset(config.dataset_name)
-    
+
     # 尝试使用指定的渲染模式恢复环境
     eval_env = None
     if render_mode is not None and render_mode != "none":
@@ -58,7 +58,6 @@ def evaluate_online(model: LitConservativeMeanFQL, config: Config, render_mode: 
         done = False
         step = 0
 
-
         # 初始化动作索引
         action_idx = 0
         # 初始化动作块
@@ -67,7 +66,7 @@ def evaluate_online(model: LitConservativeMeanFQL, config: Config, render_mode: 
         while not done:
             # Prepare observation tensor - 注意这里直接使用观测，不需要构建序列
             obs_tensor = torch.tensor(obs).float().unsqueeze(0)  # [1, obs_dim] - 添加批次维度
-            
+
             # 检查是否需要生成新的动作块
             if action_chunk is None or action_idx >= len(action_chunk):
                 # 使用Best-of-N采样方法获取动作块
@@ -76,7 +75,7 @@ def evaluate_online(model: LitConservativeMeanFQL, config: Config, render_mode: 
                     action_chunk = model(obs_tensor)  # [1, pred_horizon, action_dim]
                     action_chunk = action_chunk[0].cpu().detach().numpy()  # [pred_horizon, action_dim]
                 action_idx = 0
-            
+
             # 从动作块中获取当前动作
             action = action_chunk[action_idx]  # [action_dim]
             action_idx += 1
@@ -145,16 +144,16 @@ def main():
             return
 
     # 加载模型
-    model = LitConservativeMeanFQL.load_from_checkpoint(
-        checkpoint_path, 
-        obs_dim=obs_dim, 
+    model = LitMeanFQL.load_from_checkpoint(
+        checkpoint_path,
+        obs_dim=obs_dim,
         action_dim=action_dim,
         cfg=config
     )
-    
+
     # 确保模型在评估模式
     model.eval()
-    
+
     # 进行在线评估
     print("\nOnline Evaluation:")
     evaluate_online(model, config, render_mode=args.render)

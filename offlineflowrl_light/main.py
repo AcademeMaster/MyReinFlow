@@ -14,7 +14,6 @@ from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 # 本地模块导入
 from config import Config
 from dataset import MinariDataModule, SlidingWindowDataset
-# from meanflow_ql import LitMeanFQL
 from light_config import LitMeanFQL
 
 # PyTorch imports

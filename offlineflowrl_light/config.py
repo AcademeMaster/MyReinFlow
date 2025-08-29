@@ -11,7 +11,7 @@ class Config:
     # 训练参数
     num_epochs: int = 100
     batch_size: int = 128
-    learning_rate: float = 1e-4
+    learning_rate: float = 3e-4  # 降低学习率以提高稳定性
     eval_interval: int = 10
     checkpoint_dir: str = "./checkpoint_t"
     
@@ -42,20 +42,21 @@ class Config:
     bc_loss_final_weight: float = 0.01    # BC损失最终权重
     bc_loss_decay_steps: int = 1000     # 衰减步数
     
-    # IQL相关参数
-    quantile: float = 0.8  # IQL分位数参数
-    beta: float = 3.0      # IQL优势权重参数
-    clip_score: float = 100.0  # 分数裁剪值
+
+    # CQL参数
+    cql_alpha: float = 1.0
+    cql_temp: float = 1.0
+    cql_num_samples: int = 10
 
     
     # 更新频率参数
-    q_update_period: int = 2
+    q_update_period: int = 1  # 更频繁地更新Q网络
     v_update_period: int = 2
-    policy_update_period: int = 1
+    policy_update_period: int = 1  # 更频繁地更新策略网络
     
     # 其他参数
     normalize_q_loss: bool = False
-    grad_clip_value: float = 1.0
+    grad_clip_value: float = 1.0  # 添加梯度裁剪以提高稳定性
     num_workers: int = 0
     test_episodes: int = 20
     max_steps: int = 1000

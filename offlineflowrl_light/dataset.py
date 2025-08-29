@@ -57,10 +57,12 @@ class SlidingWindowDataset(Dataset):
         
         # 提取奖励序列 [pred_horizon, 1]
         reward_seq = episode.rewards[start:start + self.config.pred_horizon].reshape(-1, 1)
-        
-        # 只取动作序列最后一个时间步的终止标志 [1]
-        terminated = episode.terminations[start + self.config.pred_horizon - 1] if \
-            start + self.config.pred_horizon - 1 < len(episode.terminations) else True
+
+        # 只取动作序列最后一个时间步的终止标志 [1]，确保不会超出数组边界
+        last_step_index = min(start + self.config.pred_horizon - 1, len(episode.terminations) - 1)
+        terminated = episode.terminations[last_step_index]
+        truncated = episode.truncations[last_step_index]
+        done = terminated or truncated
 
         # 计算有效长度
         valid_length = min(self.config.pred_horizon, len(episode.rewards) - start)
@@ -70,7 +72,7 @@ class SlidingWindowDataset(Dataset):
             "next_observations": next_obs.astype(np.float32),
             "action_chunks": action_seq.astype(np.float32),
             "rewards": reward_seq.astype(np.float32),
-            "terminations": np.array([terminated], dtype=np.float32),  # 只返回一个标量值
+            "dones": np.array([done], dtype=np.float32),
             "valid_length": np.array(valid_length, dtype=np.int32),
         }
 
@@ -106,7 +108,7 @@ class SlidingWindowCollator:
             dtype=torch.float32
         )
         rewards = torch.zeros(batch_size, self.config.pred_horizon, 1, dtype=torch.float32)
-        terminations = torch.zeros(batch_size, 1, dtype=torch.float32)
+        dones = torch.zeros(batch_size, 1, dtype=torch.float32)
         valid_length = torch.zeros(batch_size, dtype=torch.long)
         
         # 填充批次数据
@@ -115,19 +117,19 @@ class SlidingWindowCollator:
             next_observations[i] = torch.from_numpy(item["next_observations"])
             action_chunks[i] = torch.from_numpy(item["action_chunks"])
             rewards[i] = torch.from_numpy(item["rewards"]).float()
-            terminations[i] = torch.from_numpy(item["terminations"]).float()
+            dones[i] = torch.from_numpy(item["dones"]).float()
             valid_length[i] = torch.tensor(item["valid_length"].item())
 
-        # 为了与模型兼容，将观测扩展为序列格式 [batch_size, 1, obs_dim]
-        observations_seq = observations.unsqueeze(1)  # [batch_size, 1, obs_dim]
-        next_observations_seq = next_observations.unsqueeze(1)  # [batch_size, 1, obs_dim]
+        # 确保观测数据维度正确，不需要额外处理
+        observations_seq = observations  # [batch_size, obs_dim]
+        next_observations_seq = next_observations  # [batch_size, obs_dim]
             
         return {
             "observations": observations_seq,
             "next_observations": next_observations_seq,
             "action_chunks": action_chunks,
             "rewards": rewards,
-            "terminations": terminations,
+            "dones": dones,
             "valid_length": valid_length,
         }
 
@@ -203,31 +205,44 @@ if __name__ == "__main__":
     # 加载pusher数据集
     # Action：SpaceBox(-2.0, 2.0, (7,), float32)
     # Observation：SpaceBox(-inf, inf, (23,), float64)
-    dataset = minari.load_dataset(config.dataset_name)
-    # 创建滑动窗口数据集
-    sliding_dataset = SlidingWindowDataset([dataset], config)  # 传递列表参数
+    try:
+        dataset = minari.load_dataset(config.dataset_name)
+        # 创建滑动窗口数据集
+        sliding_dataset = SlidingWindowDataset([dataset], config)  # 传递列表参数
 
-    print(f"数据集大小: {len(sliding_dataset)}")
+        print(f"数据集大小: {len(sliding_dataset)}")
+        
+        # 测试获取单个样本
+        if len(sliding_dataset) > 0:
+            sample = sliding_dataset[0]
+            print("样本结构:")
+            for key, value in sample.items():
+                print(f"  {key}: shape={value.shape if hasattr(value, 'shape') else 'N/A'}, dtype={value.dtype if hasattr(value, 'dtype') else type(value)}")
+        
+        # 测试MinariDataModule
+        print("测试MinariDataModule功能...")
+        data_module = MinariDataModule(config)
+        data_module.setup()
+        train_loader = data_module.train_dataloader()
+        
+        print(f"训练集大小: {len(data_module.train_dataset)}")
+        print(f"验证集大小: {len(data_module.val_dataset)}")
+        
+        # 测试获取一个批次
+        batch = next(iter(train_loader))
+        print("批次结构:")
+        for key, value in batch.items():
+            print(f"  {key}: shape={value.shape}, dtype={value.dtype}")
 
-    # 测试获取数据
-    if len(sliding_dataset) > 0:
-        sample = sliding_dataset[0]
-        print(f"观测数据维度: {sample['observations'].shape}")
-        print(f"未来观测数据维度: {sample['next_observations'].shape}")
-        print(f"动作块维度: {sample['action_chunks'].shape}")
-        print(f"奖励序列维度: {sample['rewards'].shape}")
-        print(f"终止标志维度: {sample['terminations'].shape}")
-        print(f"有效长度: {sample['valid_length']}")
-
-
-        # 测试批次处理
-        dataloader = DataLoader(sliding_dataset, batch_size=2, collate_fn=SlidingWindowCollator(config))
-        batch = next(iter(dataloader))
-        print(f"批次观测数据维度: {batch['observations'].shape}")
-        print(f"批次未来观测数据维度: {batch['next_observations'].shape}")
-        print(f"批次动作块维度: {batch['action_chunks'].shape}")
-        print(f"批次奖励序列维度: {batch['rewards'].shape}")
-        print(f"批次终止标志维度: {batch['terminations'].shape}")
-        print(f"批次有效长度维度: {batch['valid_length'].shape}")
-
-    print("\n数据集测试完成!")
+        # 测试数据加载器迭代
+        batch_count = 0
+        for batch in tqdm(train_loader, desc="训练数据加载器"):
+            batch_count += 1
+            if batch_count >= 3:  # 只测试前3个批次
+                break
+        print(f"成功迭代 {batch_count} 个批次")
+        
+    except Exception as e:
+        print(f"测试过程中出现错误: {e}")
+        import traceback
+        traceback.print_exc()

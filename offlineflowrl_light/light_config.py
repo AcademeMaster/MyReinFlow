@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Union
 import lightning as L
 from torch import Tensor
 
@@ -56,76 +56,56 @@ class LitMeanFQL(L.LightningModule):
         device = self.device
 
         # 数据预处理：使用单个观测而不是观测序列
-        obs = batch["observations"].float().to(device)  # [B, obs_dim]
-        obs = obs.squeeze(1)  # 从 [B, 1, obs_dim] 转换为 [B, obs_dim]
-        actions = batch["action_chunks"].float().to(device)  # [B, H, A]
-        next_obs = batch["next_observations"].float().to(device)  # [B, obs_dim]
-        next_obs = next_obs.squeeze(1)  # 从 [B, 1, obs_dim] 转换为 [B, obs_dim]
+        observations = batch["observations"].float().to(device)  # [B, obs_dim]
+        # 确保action_chunks的维度正确
+        action_chunks = batch["action_chunks"].float().to(device)  # [B, H, A]
+        next_observations = batch["next_observations"].float().to(device)  # [B, obs_dim]
+        # 移除不必要的squeeze操作
         rewards = batch["rewards"].float().to(device)  # [B, H]
-        terminated = batch["terminations"].float().to(device)  # [B, 1]
+        dones = batch["dones"].float().to(device)  # [B, 1]
 
         # 获取优化器
-        opt_c, opt_v, opt_p = self.optimizers()
+        critic_optimizer, policy_optimizer = self.optimizers()
         # 更新 step_idx
         self.step_idx += 1
 
         # 初始化损失值和信息字典，确保在所有条件下都有定义
-        qf_loss = torch.tensor(0.0, device=device)
-        vf_loss = torch.tensor(0.0, device=device)
+        critic_loss = torch.tensor(0.0, device=device)
         policy_loss = torch.tensor(0.0, device=device)
-        qf_info: Dict[str, float] = {}
-        vf_info: Dict[str, float] = {}
+        critic_info: Dict[str, float] = {}
         policy_info: Dict[str, float] = {}
 
         # 根据更新频率分别更新各个网络组件
         if (int(self.step_idx) % self.cfg.q_update_period) == 0:
             # Critic网络更新步骤
-            self.toggle_optimizer(opt_c)
-            qf_loss, qf_info = self.net.loss_qf(obs, actions, next_obs, rewards, terminated)
-            opt_c.zero_grad()
-            self.manual_backward(qf_loss)
+            self.toggle_optimizer(critic_optimizer)
+            critic_loss, critic_info = self.net.loss_critic(observations, action_chunks, next_observations, rewards,
+                                                            dones)
+            critic_optimizer.zero_grad()
+            self.manual_backward(critic_loss)
             if self.cfg.grad_clip_value:
-                self.clip_gradients(opt_c, gradient_clip_val=self.cfg.grad_clip_value, gradient_clip_algorithm="norm")
-            opt_c.step()
-            self.untoggle_optimizer(opt_c)
-
-        if (int(self.step_idx) % self.cfg.v_update_period) == 0:
-            # Value function更新步骤
-            self.toggle_optimizer(opt_v)
-            vf_loss, vf_info = self.net.loss_vf(obs, actions)
-            opt_v.zero_grad()
-            self.manual_backward(vf_loss)
-            if self.cfg.grad_clip_value:
-                self.clip_gradients(opt_v, gradient_clip_val=self.cfg.grad_clip_value, gradient_clip_algorithm="norm")
-            opt_v.step()
-            self.untoggle_optimizer(opt_v)
+                self.clip_gradients(critic_optimizer, gradient_clip_val=self.cfg.grad_clip_value, gradient_clip_algorithm="norm")
+            critic_optimizer.step()
+            self.untoggle_optimizer(critic_optimizer)
 
         if (int(self.step_idx) % self.cfg.policy_update_period) == 0:
             # Policy更新步骤
-            self.toggle_optimizer(opt_p)
-            policy_loss, policy_info = self.net.loss_policy(obs, actions)
-            opt_p.zero_grad()
+            self.toggle_optimizer(policy_optimizer)
+            policy_loss, policy_info = self.net.loss_policy(observations, action_chunks)
+            policy_optimizer.zero_grad()
             self.manual_backward(policy_loss)
             if self.cfg.grad_clip_value:
-                self.clip_gradients(opt_p, gradient_clip_val=self.cfg.grad_clip_value, gradient_clip_algorithm="norm")
-            opt_p.step()
-            self.untoggle_optimizer(opt_p)
+                self.clip_gradients(policy_optimizer, gradient_clip_val=self.cfg.grad_clip_value, gradient_clip_algorithm="norm")
+            policy_optimizer.step()
+            self.untoggle_optimizer(policy_optimizer)
 
-        # 计算总损失
-        total_loss = qf_loss + vf_loss + policy_loss
 
-        # 记录训练日志
-        self.log("critic/loss", qf_loss, on_step=True, prog_bar=True)
-        self.log("vf/loss", vf_loss, on_step=True, prog_bar=True)
-        self.log("policy/loss", policy_loss, on_step=True, prog_bar=True)
-        self.log("train/loss", total_loss, on_step=True, on_epoch=False, prog_bar=True)
-        
-        # 记录详细信息
-        info = {**qf_info, **vf_info, **policy_info}
-        for k, v in info.items():
-            self.log(f"train/{k}", v, on_step=True, on_epoch=False)
+        # 记录详细信息，避免重复记录
+        info = {**critic_info, **policy_info}
+        for key, value in info.items():
+            self.log(f"train/{key}", value, on_step=True, on_epoch=False, prog_bar=True)
 
-        return {"loss": total_loss}
+        return info
 
     def validation_step(self, batch: Dict[str, Tensor], batch_idx: int) -> Tensor:
         """
@@ -141,32 +121,33 @@ class LitMeanFQL(L.LightningModule):
         device = self.device
 
         # 数据预处理
-        obs = batch["observations"].float().to(device)
-        obs = obs.squeeze(1) if obs.dim() > 2 else obs
-        actions = batch["action_chunks"].float().to(device)
-        next_obs = batch["next_observations"].float().to(device)
-        next_obs = next_obs.squeeze(1) if next_obs.dim() > 2 else next_obs
+        observations = batch["observations"].float().to(device)
+        action_chunks = batch["action_chunks"].float().to(device)
+        next_observations = batch["next_observations"].float().to(device)
         rewards = batch["rewards"].float().to(device)
-        rewards = rewards.unsqueeze(-1) if rewards.dim() == 2 else rewards
-        terminated = batch["terminations"].float().to(device)
+        # 确保奖励维度为[B, H, 1]，即使原始数据是[B, H]也适用
+        if rewards.dim() == 2:
+            rewards = rewards.unsqueeze(-1)
+        dones = batch["dones"].float().to(device)
 
         # 计算各个组件的损失
-        qf_loss, qf_info = self.net.loss_qf(obs, actions, next_obs, rewards, terminated)
-        vf_loss, vf_info = self.net.loss_vf(obs, actions)
-        policy_loss, policy_info = self.net.loss_policy(obs, actions)
+        critic_loss, critic_info = self.net.loss_critic(observations, action_chunks, next_observations, rewards,
+                                                        dones)
+
+        policy_loss, policy_info = self.net.loss_policy(observations, action_chunks)
 
         # 计算总损失
-        val_loss = qf_loss + vf_loss + policy_loss
-        self.log("val/loss", val_loss, on_step=False, on_epoch=True, prog_bar=True)
+        validation_loss = critic_loss + policy_loss
+        self.log("val/loss", validation_loss.item(), on_step=False, on_epoch=True, prog_bar=True)
 
         # 记录奖励和详细信息
         self.log("val/reward", rewards.mean(), on_step=False, on_epoch=True, prog_bar=True)
 
-        info = {**qf_info, **vf_info, **policy_info}
-        for k, v in info.items():
-            self.log(f"val/{k}", v, on_step=False, on_epoch=True, prog_bar=False)
+        info = {**critic_info, **policy_info}
+        for key, value in info.items():
+            self.log(f"val/{key}", value, on_step=False, on_epoch=True, prog_bar=False)
 
-        return val_loss
+        return validation_loss
 
     def test_step(self, batch: Dict[str, Tensor], batch_idx: int) -> Tensor:
         """
@@ -179,20 +160,20 @@ class LitMeanFQL(L.LightningModule):
         Returns:
             动作均方误差
         """
-        obs = batch["observations"].float().to(self.device)
-        obs = obs.squeeze(1) if obs.dim() > 2 else obs
-        predicted_actions = self(obs)
+        observations = batch["observations"].float().to(self.device)
+        # 移除不必要的squeeze操作
+        predicted_actions = self(observations)
         actual_actions = batch["action_chunks"].float().to(self.device)
         action_mse = F.mse_loss(predicted_actions, actual_actions)
         self.log("test/action_mse", action_mse, on_step=False, on_epoch=True)
         return action_mse
 
-    def on_train_batch_end(self, outputs: Any, batch: Any, batch_idx: int) -> None:
+    def on_train_batch_end(self, outputs: Union[Dict[str, Any], None], batch: Any, batch_idx: int) -> None:
         """
         训练批次结束回调，用于更新目标网络
 
         Args:
-            outputs: 训练步骤的输出
+            outputs: 训练步骤的输出，可能为None
             batch: 当前批次数据
             batch_idx: 批次索引
         """
@@ -206,14 +187,11 @@ class LitMeanFQL(L.LightningModule):
         Returns:
             包含优化器和调度器的元组
         """
-        opt_c = optim.Adam(self.net.critic.parameters(), lr=self.cfg.learning_rate)
-        opt_v = optim.Adam(self.net.vf.parameters(), lr=self.cfg.learning_rate)
-        opt_p = optim.Adam(self.net.actor.parameters(), lr=self.cfg.learning_rate)
-        sched_c = optim.lr_scheduler.StepLR(opt_c, step_size=10, gamma=0.1)
-        sched_v = optim.lr_scheduler.StepLR(opt_v, step_size=10, gamma=0.1)
-        sched_p = optim.lr_scheduler.StepLR(opt_p, step_size=10, gamma=0.1)
+        critic_optimizer = optim.Adam(self.net.critic.parameters(), lr=self.cfg.learning_rate)
+        policy_optimizer = optim.Adam(self.net.actor.parameters(), lr=self.cfg.learning_rate)
+        critic_scheduler = optim.lr_scheduler.StepLR(critic_optimizer, step_size=10, gamma=0.1)
+        policy_scheduler = optim.lr_scheduler.StepLR(policy_optimizer, step_size=10, gamma=0.1)
         return (
-            {"optimizer": opt_c, "lr_scheduler": {"scheduler": sched_c, "interval": "epoch"}},
-            {"optimizer": opt_v, "lr_scheduler": {"scheduler": sched_v, "interval": "epoch"}},
-            {"optimizer": opt_p, "lr_scheduler": {"scheduler": sched_p, "interval": "epoch"}},
+            {"optimizer": critic_optimizer, "lr_scheduler": {"scheduler": critic_scheduler, "interval": "epoch"}},
+            {"optimizer": policy_optimizer, "lr_scheduler": {"scheduler": policy_scheduler, "interval": "epoch"}},
         )
