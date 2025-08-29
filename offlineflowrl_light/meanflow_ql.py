@@ -41,10 +41,9 @@ class TimeEmbedding(nn.Module):
         self.register_buffer("freqs", freqs, persistent=False)
         self.mlp = nn.Sequential(
             nn.Linear(time_dim, time_dim),
+            nn.LayerNorm(time_dim),  # 添加Norm
             nn.SiLU(),
-            nn.Linear(time_dim, time_dim * 2),
-            nn.SiLU(),
-            nn.Linear(time_dim * 2, time_dim),  # 调整为更对称结构，避免瓶颈
+            nn.Linear(time_dim, time_dim),  # 调整为更对称结构，避免瓶颈
         )
         self.time_dim = time_dim
 
@@ -110,21 +109,8 @@ class MeanTimeCondFlow(nn.Module):
             nn.Linear(hidden_dim, action_dim),
         )
 
-    def _norm_z(self, z: Tensor) -> Tensor:
-        # 简化：假设输入已norm，或用view
-        if z.dim() == 3: return z
-        return z.view(z.shape[0], self.pred_horizon, self.action_dim) if z.dim() == 2 else z.view(1, -1, self.action_dim)
-
-    @staticmethod
-    def _norm_time(t: Tensor, B: int) -> Tensor:
-        return t.view(-1)[:B].expand(B) if t.numel() == 1 else t.view(-1)[:B]
-
     def forward(self, obs: Tensor, z: Tensor, r: Tensor, t: Tensor) -> Tensor:
-        z = self._norm_z(z)
         B, H, A = z.shape
-        t = self._norm_time(t, B)
-        r = self._norm_time(r, B)
-
         te = self.t_embed(t)[:, None, :].expand(B, H, -1)  # 优化broadcast
         re = self.r_embed(r)[:, None, :].expand(B, H, -1)
         obs_encoded = self.obs_encoder(obs)[:, None, :].expand(B, H, -1)
@@ -250,6 +236,7 @@ class MeanFQL(nn.Module):
             best_action_chunks = candidates[batch_indices, best_indices]
             return best_action_chunks
 
+
     def loss_critic(self, obs: Tensor, actions: Tensor, next_obs: Tensor,
                     rewards: Tensor, dones: Tensor) -> Tuple[Tensor, Dict]:
         B = obs.shape[0]
@@ -286,6 +273,7 @@ class MeanFQL(nn.Module):
         # 使用rand_like生成与actions相同形状的随机张量，然后进行缩放以匹配动作空间
         sampled_actions = torch.rand_like(actions.repeat_interleave(num_samples, dim=0),
                                          device=obs.device) *2.0*self.actor.action_scale-self.actor.action_scale
+
         # 计算采样动作的Q值
         q1s, q2s = self.critic(rep_obs, sampled_actions)
         q1s = q1s.view(B, num_samples)
@@ -315,7 +303,7 @@ class MeanFQL(nn.Module):
         q_loss = -q_value.mean()  # 使用均值确保是标量
         bc_losses = self.actor.per_sample_flow_bc_loss(obs, actions)
 
-        policy_loss = (bc_losses*0 + q_loss).mean()
+        policy_loss = (bc_losses + q_loss).mean()
         info = {
             'policy_loss': policy_loss.item(),
             'bc_loss': bc_losses.mean().item(),
