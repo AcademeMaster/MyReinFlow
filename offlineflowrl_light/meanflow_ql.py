@@ -190,7 +190,7 @@ class MeanFlowActor(nn.Module):
 
         delta = torch.clamp(t - r, min=1e-6).view(-1, 1, 1)
         u_tgt = (v - delta * dudt).detach()
-        losses = F.mse_loss(u_pred, u_tgt, reduction='none').mean(dim=[1, 2])  # [B]
+        losses = F.huber_loss(u_pred, u_tgt, reduction='none').mean(dim=[1, 2])  # [B]
         return losses
 
 

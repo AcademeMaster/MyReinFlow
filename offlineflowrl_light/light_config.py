@@ -186,8 +186,8 @@ class LitMeanFQL(L.LightningModule):
         Returns:
             包含优化器和调度器的元组
         """
-        critic_optimizer = optim.Adam(self.net.critic.parameters(), lr=self.cfg.learning_rate)
-        policy_optimizer = optim.Adam(self.net.actor.parameters(), lr=self.cfg.learning_rate)
+        critic_optimizer = optim.AdamW(self.net.critic.parameters(), lr=self.cfg.learning_rate)
+        policy_optimizer = optim.AdamW(self.net.actor.parameters(), lr=self.cfg.learning_rate)
         critic_scheduler = optim.lr_scheduler.StepLR(critic_optimizer, step_size=10, gamma=0.1)
         policy_scheduler = optim.lr_scheduler.StepLR(policy_optimizer, step_size=10, gamma=0.1)
         return (
