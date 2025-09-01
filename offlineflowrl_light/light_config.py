@@ -108,16 +108,7 @@ class LitMeanFQL(L.LightningModule):
         return info
 
     def validation_step(self, batch: Dict[str, Tensor], batch_idx: int) -> Tensor:
-        """
-        验证步骤
 
-        Args:
-            batch: 包含验证数据的字典
-            batch_idx: 批次索引
-
-        Returns:
-            验证损失值
-        """
         device = self.device
 
         # 数据预处理

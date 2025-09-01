@@ -29,7 +29,6 @@ class FeatureEmbedding(nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         return self.net(x)
 
-
 class TimeEmbedding(nn.Module):
     """sin/cos time embedding + MLP"""
 
@@ -53,7 +52,6 @@ class TimeEmbedding(nn.Module):
         args = t.unsqueeze(-1) * self.freqs.unsqueeze(0)  # [B, half]
         enc = torch.cat([torch.sin(args), torch.cos(args)], dim=-1)  # [B, time_dim]
         return self.mlp(enc)
-
 
 # ========= Critic (Double Q over obs + action-chunk) =========
 class DoubleCriticObsAct(nn.Module):
@@ -89,7 +87,6 @@ class DoubleCriticObsAct(nn.Module):
         x = self._prep(obs, actions)
         return self.q1(x), self.q2(x)
 
-
 # ========= Time-conditioned flow model (predicts velocity [B,H,A]) =========
 class MeanTimeCondFlow(nn.Module):
     def __init__(self, obs_dim: int, action_dim: int, hidden_dim: int, time_dim: int,
@@ -105,11 +102,13 @@ class MeanTimeCondFlow(nn.Module):
         self.noise_embed = FeatureEmbedding(action_dim, hidden_dim)
 
         joint_in = hidden_dim + hidden_dim + time_dim + time_dim
+        # MLP，使用Tanh输出，确保动作在[-1,1]范围内
         self.net = nn.Sequential(
             nn.Linear(joint_in, hidden_dim),
             nn.LayerNorm(hidden_dim),  # 添加Norm
             nn.SiLU(),
             nn.Linear(hidden_dim, action_dim),
+            nn.Tanh(),
         )
 
     def forward(self, obs: Tensor, z: Tensor, r: Tensor, t: Tensor) -> Tensor:
@@ -122,7 +121,6 @@ class MeanTimeCondFlow(nn.Module):
 
         x = torch.cat([obs_encoded, ne, re, te], dim=-1)
         return self.net(x)
-
 
 # ========= Actor (MeanFlow) =========
 class MeanFlowActor(nn.Module):
@@ -157,6 +155,7 @@ class MeanFlowActor(nn.Module):
         device = next(self.parameters()).device
         obs = obs.to(device)
 
+
         x = torch.randn(obs.size(0), self.pred_horizon, self.action_dim, device=device)
         n_steps = max(1, int(n_steps))
         dt = 1.0 / n_steps
@@ -176,6 +175,7 @@ class MeanFlowActor(nn.Module):
         t, r = self.sample_t_r(action_chunk.shape[0], device=device)
         z = (1 - t.view(-1, 1, 1)) * action_chunk + t.view(-1, 1, 1) * z0
         v = z0 - action_chunk
+
 
         z = z.requires_grad_(True)
         t = t.requires_grad_(True)
@@ -213,7 +213,7 @@ class MeanFQL(nn.Module):
     def discounted_returns(self, rewards: Tensor, gamma: float) -> Tensor:
         gamma = max(0.0, min(1.0, gamma))
         B, H, rew_dim = rewards.shape
-
+        
         # 确保rewards的形状为[B, H]
         rewards_squeezed = rewards.squeeze(-1) if rew_dim == 1 else rewards.view(B, H)
         # 创建折扣因子
@@ -237,6 +237,7 @@ class MeanFQL(nn.Module):
             batch_indices = torch.arange(B)
             best_action_chunks = candidates[batch_indices, best_indices]
             return best_action_chunks
+
 
     def loss_critic(self, obs: Tensor, actions: Tensor, next_obs: Tensor,
                     rewards: Tensor, dones: Tensor) -> Tuple[Tensor, Dict]:
@@ -319,7 +320,7 @@ class MeanFQL(nn.Module):
         q_loss = -q_value.mean()  # 使用均值确保是标量
         bc_losses = self.actor.per_sample_flow_bc_loss(obs, actions)
 
-        policy_loss = (bc_losses * 0 + q_loss).mean()
+        policy_loss = (bc_losses*0 + q_loss).mean()
         info = {
             'policy_loss': policy_loss.item(),
             'bc_loss': bc_losses.mean().item(),

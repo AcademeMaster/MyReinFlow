@@ -20,7 +20,7 @@ class Config:
     
     # 序列参数
     obs_horizon: int = 1  # 观测序列长度，设置为1表示只使用当前观测
-    pred_horizon: int = 16
+    pred_horizon: int = 8
     # action_horizon: int = 2
     inference_steps: int = 1  # 推理步数
     window_stride: int = 1  # 滑动窗口步长
@@ -44,7 +44,7 @@ class Config:
     
 
     # CQL参数
-    cql_alpha: float = 100.0 # 过大会使模型过于保守，从而导致模型难以收敛到最优策略，过小的会使模型忽略保守性，导致分布偏移问题。
+    cql_alpha: float = 10.0 # 过大会使模型过于保守，从而导致模型难以收敛到最优策略，过小的会使模型忽略保守性，导致分布偏移问题。
     cql_temp: float = 10.0
     cql_num_samples: int = 10
 
