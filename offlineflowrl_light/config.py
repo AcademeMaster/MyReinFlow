@@ -16,7 +16,7 @@ class Config:
     checkpoint_dir: str = "./checkpoint_t"
     
     # 环境参数
-    dataset_name: str = "mujoco/pusher/expert-v0"
+    dataset_name: str = "mujoco/ant/expert-v0"
     
     # 序列参数
     obs_horizon: int = 1  # 观测序列长度，设置为1表示只使用当前观测

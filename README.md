@@ -63,26 +63,26 @@ poetry install
 
 ```bash
 # 基本训练命令
-python main.py train --dataset mujoco/pusher/expert-v0 --epochs 100
+python offline_trainer.py train --dataset mujoco/pusher/expert-v0 --epochs 100
 
 # 使用大批次大小加速训练（适用于有足够显存的情况）
-python main.py train --dataset mujoco/pusher/expert-v0 --epochs 100 --batch-size 4096
+python offline_trainer.py train --dataset mujoco/pusher/expert-v0 --epochs 100 --batch-size 4096
 
 # 使用混合精度训练（需要支持的GPU）
-python main.py train --dataset mujoco/pusher/expert-v0 --epochs 100 --mixed-precision fp16
+python offline_trainer.py train --dataset mujoco/pusher/expert-v0 --epochs 100 --mixed-precision fp16
 ```
 
 ### 测试模型
 
 ```bash
 # 基本测试命令
-python main.py test --dataset mujoco/pusher/expert-v0 --checkpoint ./checkpoint_t/flow_ema_0100.pth
+python offline_trainer.py test --dataset mujoco/pusher/expert-v0 --checkpoint ./checkpoint_t/flow_ema_0100.pth
 
 # 不显示渲染界面的测试
-python main.py test --dataset mujoco/pusher/expert-v0 --checkpoint ./checkpoint_t/flow_ema_0100.pth --render none
+python offline_trainer.py test --dataset mujoco/pusher/expert-v0 --checkpoint ./checkpoint_t/flow_ema_0100.pth --render none
 
 # 指定测试轮数
-python main.py test --dataset mujoco/pusher/expert-v0 --checkpoint ./checkpoint_t/flow_ema_0100.pth --test-episodes 20
+python offline_trainer.py test --dataset mujoco/pusher/expert-v0 --checkpoint ./checkpoint_t/flow_ema_0100.pth --test-episodes 20
 ```
 
 ## 参数说明

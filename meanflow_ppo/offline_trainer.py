@@ -14,15 +14,13 @@ from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 # 本地模块导入
 from config import Config
 from dataset import MinariDataModule, SlidingWindowDataset
-from light_config import LitMeanFQL
+from light_offline_trainer import LitMeanFQL
 
 # PyTorch imports
 
 def main():
     # 解析命令行参数
     parser = argparse.ArgumentParser(description="基于流匹配的机器人操作训练")
-    parser.add_argument("mode", nargs='?', default="train", choices=["train", "test"],
-                        help="运行模式: train 或 test")
     parser.add_argument("--dataset", default="mujoco/pusher/expert-v0", help="Minari数据集名称")
     parser.add_argument("--epochs", type=int, default=100, help="训练轮数")
     parser.add_argument("--batch-size", type=int, default=2048, help="批量大小")
@@ -36,9 +34,7 @@ def main():
                         help="混合精度训练 (32-true, 16-mixed 或 bf16-mixed)")
     parser.add_argument("--gradient-accumulation-steps", type=int, default=1,
                         help="梯度累积步数")
-    # 在线评估开关
-    parser.add_argument("--skip-online-eval", action="store_true", default=False,
-                        help="跳过在线评估")
+
     args = parser.parse_args()
 
     # 初始化配置
@@ -70,9 +66,6 @@ def main():
     config.observation_dim=obs_dim
 
     dm = MinariDataModule(config)
-    # 确保在测试模式下也调用setup方法
-    if args.mode == "test":
-        dm.setup()
 
     model = LitMeanFQL(obs_dim, action_dim, config)
 
@@ -98,21 +91,8 @@ def main():
         accumulate_grad_batches=config.gradient_accumulation_steps,
     )
 
-    if args.mode == "train":
-        # 训练模型
-        trainer.fit(model=model, datamodule=dm)
 
-    elif args.mode == "test":
-        if args.checkpoint:
-            model = LitMeanFQL.load_from_checkpoint(args.checkpoint, obs_dim=obs_dim, action_dim=action_dim,
-                                                    cfg=config)
-        else:
-            print("Warning: No checkpoint provided, using untrained model for test.")
-
-        # Offline test (action MSE on val data)
-        print("\nOffline Testing (Action MSE):")
-        trainer.test(model, dataloaders=dm.test_dataloader())
-
+    trainer.fit(model=model, datamodule=dm)
 
 
 

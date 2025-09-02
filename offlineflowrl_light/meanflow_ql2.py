@@ -87,7 +87,7 @@ class DoubleCriticObsAct(nn.Module):
         x = self._prep(obs, actions)
         return self.q1(x), self.q2(x)
 
-# ========= Time-conditioned flow model (predicts velocity [B,H,A]) =========
+# ========= Time-conditioned meanflow_ppo model (predicts velocity [B,H,A]) =========
 class MeanTimeCondFlow(nn.Module):
     def __init__(self, obs_dim: int, action_dim: int, hidden_dim: int, time_dim: int,
                  pred_horizon: int, obs_horizon: int):
