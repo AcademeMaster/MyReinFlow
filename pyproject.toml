@@ -1,24 +1,7 @@
 [project]
-name = "myreinflow"
+name = "meanflowtd3"
 version = "0.1.0"
-description = "基于流匹配的强化学习框架"
+description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = [
-    "torch>=1.13.0",
-    "numpy>=1.21.0",
-    "gymnasium>=0.26.0",
-    "minari>=0.4.0",
-    "diffusers>=0.21.0",
-    "torchcfm>=0.1.0",
-    "accelerate>=0.20.0",
-    "tqdm>=4.64.0",
-    "transformers>=4.30.0",
-]
-
-[build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project.scripts]
-myreinflow = "main:main"
+dependencies = []
