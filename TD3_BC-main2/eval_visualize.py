@@ -3,13 +3,14 @@
 可视化评估脚本，用于渲染和查看训练好的策略
 """
 
-import numpy as np
-import torch
 import argparse
 import os
+
 import minari
+import numpy as np
+import torch
+
 import TD3_BC
-import utils
 
 
 def eval_policy_visualize(policy, env_name, seed, mean, std, seed_offset=100, eval_episodes=10):
@@ -41,7 +42,7 @@ def eval_policy_visualize(policy, env_name, seed, mean, std, seed_offset=100, ev
         step_count = 0
         
         print(f"开始第 {ep+1} 个评估剧集...")
-        
+        n_step=1
         while not done:
             # Handle different state formats
             if isinstance(state, tuple):
@@ -58,7 +59,15 @@ def eval_policy_visualize(policy, env_name, seed, mean, std, seed_offset=100, ev
             elif state_array.ndim == 1:
                 state_array = state_array.reshape(1, -1)
             state_normalized = (state_array - mean) / std
-            action = policy.select_action(state_normalized)
+            action = policy.select_action(state_normalized, n_step=n_step)
+
+            # # 通过该方法实现动态精度
+            # action_tensor = torch.tensor(action, dtype=torch.float32, device=policy.actor.device).unsqueeze(0)
+            # state_tensor = torch.tensor(state_normalized, dtype=torch.float32, device=policy.actor.device)
+            # q_value=policy.critic.Q1(state_tensor, action_tensor)
+            # num_step=torch.sigmoid(q_value+20)
+            # n_step=max(1, int(num_step*20))
+            # print(f"  步数: {step_count},  Q值: {q_value.item():.3f}, n_step: {n_step}")
             state, reward, terminated, truncated, _ = eval_env.step(action)
             done = terminated or truncated
             

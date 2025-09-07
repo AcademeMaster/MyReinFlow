@@ -155,7 +155,7 @@ if __name__ == "__main__":
     parser.add_argument("--env", default="mujoco/pusher/expert-v0")  # Minari environment name
     parser.add_argument("--seed", default=0, type=int)  # Sets Gym, PyTorch and Numpy seeds
     parser.add_argument("--eval_freq", default=5e3, type=int)  # How often (time steps) we evaluate
-    parser.add_argument("--max_timesteps", default=2e6, type=int)  # Max time steps to run environment
+    parser.add_argument("--max_timesteps", default=2e5, type=int)  # Max time steps to run environment
     parser.add_argument("--save_model", action="store_true", default=True)  # Save model and optimizer parameters
     parser.add_argument("--load_model", default="")  # Model load file name, "" doesn't load, "default" uses file_name
     # TD3
@@ -166,6 +166,7 @@ if __name__ == "__main__":
     parser.add_argument("--policy_noise", default=0.2)  # Noise added to target policy during critic update
     parser.add_argument("--noise_clip", default=0.5)  # Range to clip target policy noise
     parser.add_argument("--policy_freq", default=2, type=int)  # Frequency of delayed policy updates
+    parser.add_argument("--horizon", default=4, type=int)
     # TD3 + BC
     parser.add_argument("--alpha", default=2.5)
     parser.add_argument("--normalize", default=True)
@@ -213,7 +214,8 @@ if __name__ == "__main__":
         # TD3 + BC
         "alpha": args.alpha,
         # 初始设置为离线训练模式
-        "train_mode": "offline"
+        "train_mode": "offline",
+        "horizon": args.horizon,
     }
 
     # Initialize policy
@@ -223,8 +225,8 @@ if __name__ == "__main__":
         policy_file = file_name if args.load_model == "default" else args.load_model
         policy.load(f"./models/{policy_file}")
 
-    replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
-    
+    replay_buffer = utils.ReplayBuffer(state_dim, action_dim, horizon=args.horizon)
+
     # 第一阶段：离线训练
     print("开始离线训练阶段...")
     replay_buffer.convert_minari(minari_dataset)
@@ -239,6 +241,7 @@ if __name__ == "__main__":
 
     evaluations = []
     for t in range(int(args.max_timesteps)):
+        # 统一训练调用，不需要区分单步和多步
         policy.train(replay_buffer, args.batch_size)
         # Evaluate episode
         if (t + 1) % args.eval_freq == 0:
