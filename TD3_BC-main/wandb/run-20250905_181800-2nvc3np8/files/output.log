@@ -1,0 +1,645 @@
+开始纯在线训练...
+Episode 1: Steps=100, Reward=-141.982, Buffer_size=100
+Episode 2: Steps=100, Reward=-148.797, Buffer_size=200
+Episode 3: Steps=100, Reward=-153.875, Buffer_size=300
+Episode 4: Steps=100, Reward=-157.444, Buffer_size=400
+Episode 5: Steps=100, Reward=-137.050, Buffer_size=500
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 5: -315.713
+Episode 6: Steps=100, Reward=-149.170, Buffer_size=600
+Episode 7: Steps=100, Reward=-139.110, Buffer_size=700
+Episode 8: Steps=100, Reward=-150.340, Buffer_size=800
+Episode 9: Steps=100, Reward=-160.391, Buffer_size=900
+Episode 10: Steps=100, Reward=-140.039, Buffer_size=1000
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 10: -315.713
+Episode 11: Steps=100, Reward=-153.521, Buffer_size=1100
+Episode 12: Steps=100, Reward=-146.370, Buffer_size=1200
+Episode 13: Steps=100, Reward=-151.529, Buffer_size=1300
+Episode 14: Steps=100, Reward=-138.335, Buffer_size=1400
+Episode 15: Steps=100, Reward=-156.072, Buffer_size=1500
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 15: -315.713
+Episode 16: Steps=100, Reward=-148.939, Buffer_size=1600
+Episode 17: Steps=100, Reward=-131.720, Buffer_size=1700
+Episode 18: Steps=100, Reward=-154.506, Buffer_size=1800
+Episode 19: Steps=100, Reward=-155.110, Buffer_size=1900
+Episode 20: Steps=100, Reward=-157.090, Buffer_size=2000
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 20: -315.713
+Episode 21: Steps=100, Reward=-158.084, Buffer_size=2100
+Episode 22: Steps=100, Reward=-146.002, Buffer_size=2200
+Episode 23: Steps=100, Reward=-152.081, Buffer_size=2300
+Episode 24: Steps=100, Reward=-154.655, Buffer_size=2400
+Episode 25: Steps=100, Reward=-138.651, Buffer_size=2500
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 25: -315.713
+Episode 26: Steps=100, Reward=-153.949, Buffer_size=2600
+Episode 27: Steps=100, Reward=-153.783, Buffer_size=2700
+Episode 28: Steps=100, Reward=-140.784, Buffer_size=2800
+Episode 29: Steps=100, Reward=-149.337, Buffer_size=2900
+Episode 30: Steps=100, Reward=-142.684, Buffer_size=3000
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 30: -315.713
+Episode 31: Steps=100, Reward=-145.681, Buffer_size=3100
+Episode 32: Steps=100, Reward=-154.358, Buffer_size=3200
+Episode 33: Steps=100, Reward=-147.042, Buffer_size=3300
+Episode 34: Steps=100, Reward=-148.590, Buffer_size=3400
+Episode 35: Steps=100, Reward=-137.603, Buffer_size=3500
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 35: -315.713
+Episode 36: Steps=100, Reward=-147.713, Buffer_size=3600
+Episode 37: Steps=100, Reward=-155.103, Buffer_size=3700
+Episode 38: Steps=100, Reward=-152.540, Buffer_size=3800
+Episode 39: Steps=100, Reward=-146.584, Buffer_size=3900
+Episode 40: Steps=100, Reward=-147.406, Buffer_size=4000
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 40: -315.713
+Episode 41: Steps=100, Reward=-145.674, Buffer_size=4100
+Episode 42: Steps=100, Reward=-153.536, Buffer_size=4200
+Episode 43: Steps=100, Reward=-134.689, Buffer_size=4300
+Episode 44: Steps=100, Reward=-153.754, Buffer_size=4400
+Episode 45: Steps=100, Reward=-156.332, Buffer_size=4500
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 45: -315.713
+Episode 46: Steps=100, Reward=-141.651, Buffer_size=4600
+Episode 47: Steps=100, Reward=-151.332, Buffer_size=4700
+Episode 48: Steps=100, Reward=-160.371, Buffer_size=4800
+Episode 49: Steps=100, Reward=-160.071, Buffer_size=4900
+Episode 50: Steps=100, Reward=-149.897, Buffer_size=5000
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 50: -315.713
+Episode 51: Steps=100, Reward=-261.027, Buffer_size=5100
+  Average reward: -366.560 | Average length: 100.0
+Evaluation at episode 55: -366.560
+Step 6000: Critic Loss: 7.1164, Actor Loss: 35.9532, Q Value: -35.9492
+  Average reward: -367.030 | Average length: 100.0
+Evaluation at episode 60: -367.030
+Episode 61: Steps=100, Reward=-310.003, Buffer_size=6100
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -39.04743957519531, Q std: 21.878000259399414
+Warning: Actor gradient norm is very small: 4.7887411606582335e-08
+Q mean: -40.917213439941406, Q std: 23.44097900390625
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -39.18930435180664, Q std: 21.305208206176758
+Warning: Actor gradient norm is very small: 5.586365399743141e-09
+Q mean: -43.80915832519531, Q std: 25.400300979614258
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -43.25721740722656, Q std: 25.168596267700195
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -44.636390686035156, Q std: 23.805437088012695
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -46.08793640136719, Q std: 25.747859954833984
+  Average reward: -367.392 | Average length: 100.0
+Evaluation at episode 65: -367.392
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -42.41082763671875, Q std: 22.885059356689453
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -43.016510009765625, Q std: 22.322132110595703
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -42.71653747558594, Q std: 23.4330997467041
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -41.9117546081543, Q std: 25.723661422729492
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -42.620697021484375, Q std: 24.2288875579834
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -47.901123046875, Q std: 26.94757652282715
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.034996032714844, Q std: 24.79616928100586
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -44.29180908203125, Q std: 25.235944747924805
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -45.81275177001953, Q std: 24.45037841796875
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -45.93614959716797, Q std: 26.26800537109375
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -45.1641845703125, Q std: 26.92833709716797
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -48.30418014526367, Q std: 27.79071617126465
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -46.30720901489258, Q std: 24.70709228515625
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -47.88525390625, Q std: 24.04362678527832
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -43.13449478149414, Q std: 24.194128036499023
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -43.84117889404297, Q std: 25.218883514404297
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -48.58794021606445, Q std: 26.58759117126465
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -44.51500701904297, Q std: 26.952348709106445
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -46.15773391723633, Q std: 26.09606170654297
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -47.660438537597656, Q std: 26.808502197265625
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -47.1470947265625, Q std: 24.979352951049805
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -44.437801361083984, Q std: 25.1647891998291
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -48.00348663330078, Q std: 26.514448165893555
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -48.472251892089844, Q std: 26.053733825683594
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -47.45277786254883, Q std: 28.289369583129883
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -47.257755279541016, Q std: 24.110076904296875
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -47.979881286621094, Q std: 28.04020881652832
+Warning: Actor gradient norm is very small: 4.075773562422767e-08
+Q mean: -46.00798416137695, Q std: 25.516021728515625
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -46.21720886230469, Q std: 23.765844345092773
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -44.21204376220703, Q std: 26.841352462768555
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -48.486534118652344, Q std: 23.537748336791992
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -47.0308837890625, Q std: 25.677366256713867
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -45.589256286621094, Q std: 24.38640785217285
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -48.848114013671875, Q std: 25.089021682739258
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -47.387760162353516, Q std: 25.546588897705078
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -49.04458236694336, Q std: 25.841720581054688
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -51.58780288696289, Q std: 25.676456451416016
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -48.0079460144043, Q std: 26.08139419555664
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -50.053733825683594, Q std: 26.949481964111328
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -50.817222595214844, Q std: 25.2932186126709
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -51.066650390625, Q std: 27.08772087097168
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -50.595924377441406, Q std: 25.89604377746582
+Warning: Actor gradient norm is very small: 2.446156415355766e-08
+Q mean: -50.39863586425781, Q std: 23.776487350463867
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -51.54225540161133, Q std: 25.041584014892578
+Step 7000: Critic Loss: 7.3216, Actor Loss: 52.3098, Q Value: -52.3058
+  Average reward: -366.645 | Average length: 100.0
+Evaluation at episode 70: -366.645
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -49.02373504638672, Q std: 25.909488677978516
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -53.5004768371582, Q std: 26.698171615600586
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -49.821258544921875, Q std: 26.22569465637207
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -49.14557647705078, Q std: 26.736116409301758
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -51.63360595703125, Q std: 27.607885360717773
+Episode 71: Steps=100, Reward=-308.204, Buffer_size=7100
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -48.189903259277344, Q std: 26.68089485168457
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -50.622039794921875, Q std: 26.41215705871582
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -48.204078674316406, Q std: 27.124958038330078
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.72834777832031, Q std: 29.243911743164062
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -47.5357551574707, Q std: 24.359943389892578
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.07350540161133, Q std: 25.877552032470703
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -52.67877960205078, Q std: 27.005929946899414
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -53.52042770385742, Q std: 29.223228454589844
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.19218444824219, Q std: 27.68933868408203
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.50834274291992, Q std: 27.167524337768555
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -52.70661163330078, Q std: 26.157779693603516
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -52.081382751464844, Q std: 27.403717041015625
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -52.574249267578125, Q std: 25.92705726623535
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -49.28395080566406, Q std: 26.79417610168457
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -51.67995071411133, Q std: 25.59016227722168
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.594322204589844, Q std: 27.748458862304688
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -50.718299865722656, Q std: 26.931652069091797
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -53.12287139892578, Q std: 25.059951782226562
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.8001823425293, Q std: 27.043540954589844
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -50.43187713623047, Q std: 25.175914764404297
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -53.41633605957031, Q std: 29.50841522216797
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -52.57179260253906, Q std: 29.040037155151367
+  Average reward: -363.024 | Average length: 100.0
+Evaluation at episode 75: -363.024
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.38719177246094, Q std: 26.739965438842773
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.828147888183594, Q std: 26.510366439819336
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -53.4038200378418, Q std: 26.66595458984375
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.19877243041992, Q std: 28.03593635559082
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.48974609375, Q std: 26.472482681274414
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.49332809448242, Q std: 28.094261169433594
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.29022979736328, Q std: 29.02044105529785
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -52.97614669799805, Q std: 27.092111587524414
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.006778717041016, Q std: 28.732351303100586
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -52.110504150390625, Q std: 26.62407875061035
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.748191833496094, Q std: 25.637483596801758
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.30925750732422, Q std: 27.73093032836914
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -52.188446044921875, Q std: 28.392244338989258
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -58.458885192871094, Q std: 27.053936004638672
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -57.19983673095703, Q std: 29.27474594116211
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -57.36839294433594, Q std: 26.72551918029785
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.75214767456055, Q std: 27.721128463745117
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.18315124511719, Q std: 27.16718101501465
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.17882537841797, Q std: 29.335935592651367
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.777313232421875, Q std: 26.803380966186523
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -57.31260299682617, Q std: 27.477113723754883
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.30522155761719, Q std: 26.628450393676758
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.57780838012695, Q std: 26.19879150390625
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -58.023109436035156, Q std: 28.870298385620117
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.711002349853516, Q std: 26.909101486206055
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.488983154296875, Q std: 24.96935272216797
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.58319854736328, Q std: 29.040409088134766
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -57.76172637939453, Q std: 25.607372283935547
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.442161560058594, Q std: 25.745553970336914
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.64790344238281, Q std: 28.576093673706055
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -58.40211486816406, Q std: 26.96312141418457
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.424522399902344, Q std: 26.312379837036133
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.04505920410156, Q std: 26.32914161682129
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.70540237426758, Q std: 25.868268966674805
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.83948516845703, Q std: 27.579599380493164
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.84619903564453, Q std: 27.26464080810547
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.7255744934082, Q std: 28.852523803710938
+Step 8000: Critic Loss: 8.0512, Actor Loss: 56.9181, Q Value: -56.9141
+  Average reward: -363.045 | Average length: 100.0
+Evaluation at episode 80: -363.045
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -58.0512580871582, Q std: 27.803007125854492
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.69362258911133, Q std: 24.569847106933594
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -61.116065979003906, Q std: 28.951814651489258
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -57.442901611328125, Q std: 27.080942153930664
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -60.728179931640625, Q std: 27.682777404785156
+Episode 81: Steps=100, Reward=-305.631, Buffer_size=8100
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -60.450740814208984, Q std: 29.63855743408203
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -58.07155990600586, Q std: 29.612062454223633
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.14118194580078, Q std: 27.08625602722168
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.407833099365234, Q std: 27.069822311401367
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -61.49223327636719, Q std: 26.061281204223633
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -57.581356048583984, Q std: 28.818960189819336
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.27326965332031, Q std: 27.70381736755371
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -57.02104187011719, Q std: 26.9833984375
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -57.73023986816406, Q std: 27.13561248779297
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -61.13144302368164, Q std: 27.834272384643555
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -61.255615234375, Q std: 27.407190322875977
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -61.34626007080078, Q std: 28.39286994934082
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -59.26499938964844, Q std: 26.83540916442871
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -61.73938751220703, Q std: 27.68874740600586
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -57.980224609375, Q std: 28.491697311401367
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -59.95318603515625, Q std: 28.07485580444336
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -59.31396484375, Q std: 27.786090850830078
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -58.8674430847168, Q std: 27.542377471923828
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -61.27492141723633, Q std: 26.834184646606445
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.9961051940918, Q std: 26.84092140197754
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -57.818275451660156, Q std: 27.48196029663086
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.002532958984375, Q std: 26.974483489990234
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -61.069698333740234, Q std: 27.977184295654297
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -59.69829177856445, Q std: 27.453401565551758
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -61.04836654663086, Q std: 26.90040397644043
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -58.50421905517578, Q std: 29.21506690979004
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -62.94978332519531, Q std: 27.635162353515625
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -58.04922866821289, Q std: 29.036962509155273
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.93326950073242, Q std: 27.754854202270508
+  Average reward: -363.023 | Average length: 100.0
+Evaluation at episode 85: -363.023
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.143341064453125, Q std: 26.880611419677734
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -62.961952209472656, Q std: 29.187885284423828
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -62.03076934814453, Q std: 29.023588180541992
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -59.12555694580078, Q std: 26.465208053588867
+Warning: Actor gradient norm is very small: 4.3573548711659244e-07
+Q mean: -63.84961700439453, Q std: 28.064342498779297
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -65.68214416503906, Q std: 29.552913665771484
+Warning: Actor gradient norm is very small: 9.530319756757469e-08
+Q mean: -62.1798095703125, Q std: 27.353361129760742
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -58.355613708496094, Q std: 26.399272918701172
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -59.2547607421875, Q std: 25.672237396240234
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -63.50431823730469, Q std: 28.019163131713867
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -62.7320556640625, Q std: 28.538358688354492
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -60.971527099609375, Q std: 29.568655014038086
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -62.56333923339844, Q std: 28.7254581451416
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -63.14280700683594, Q std: 27.72284507751465
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -63.365135192871094, Q std: 27.39673614501953
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -64.67571258544922, Q std: 28.328092575073242
+Step 9000: Critic Loss: 7.8969, Actor Loss: 64.6304, Q Value: -64.6264
+  Average reward: -356.470 | Average length: 100.0
+Evaluation at episode 90: -356.470
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -66.0995864868164, Q std: 29.378437042236328
+Episode 91: Steps=100, Reward=-293.632, Buffer_size=9100
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -63.64978790283203, Q std: 30.022855758666992
+Warning: Actor gradient norm is very small: 3.762167896597089e-08
+Q mean: -62.56073760986328, Q std: 29.772775650024414
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -65.7333984375, Q std: 29.71622657775879
+  Average reward: -333.237 | Average length: 100.0
+Evaluation at episode 95: -333.237
+Warning: Actor gradient norm is very small: 9.792059161285787e-07
+Q mean: -66.60028076171875, Q std: 32.329566955566406
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -67.69920349121094, Q std: 33.05662536621094
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -67.62197875976562, Q std: 29.473621368408203
+Warning: Actor gradient norm is very small: 1.123655493243684e-07
+Q mean: -68.17333221435547, Q std: 32.18369674682617
+Step 10000: Critic Loss: 5.6690, Actor Loss: 69.0592, Q Value: -69.0552
+  Average reward: -332.979 | Average length: 100.0
+Evaluation at episode 100: -332.979
+Episode 101: Steps=100, Reward=-284.250, Buffer_size=10100
+Warning: Actor gradient norm is very small: 1.1377420075963439e-07
+Q mean: -63.59858703613281, Q std: 31.355579376220703
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -66.63041687011719, Q std: 30.169450759887695
+Warning: Actor gradient norm is very small: 2.1206657502789235e-07
+Q mean: -68.86791229248047, Q std: 33.688804626464844
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -69.0450668334961, Q std: 33.06884002685547
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -69.90052032470703, Q std: 31.840513229370117
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -68.061279296875, Q std: 32.94550323486328
+  Average reward: -333.011 | Average length: 100.0
+Evaluation at episode 105: -333.011
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -67.36341857910156, Q std: 31.010765075683594
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -63.609519958496094, Q std: 31.340715408325195
+Warning: Actor gradient norm is very small: 3.4275263625205154e-07
+Q mean: -71.36664581298828, Q std: 33.41255569458008
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -74.53413391113281, Q std: 34.96726989746094
+Warning: Actor gradient norm is very small: 1.0691903888635407e-07
+Q mean: -73.55201721191406, Q std: 33.18745040893555
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -70.77269744873047, Q std: 32.576534271240234
+Warning: Actor gradient norm is very small: 5.63431807195161e-07
+Q mean: -67.63703918457031, Q std: 31.397912979125977
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -69.76973724365234, Q std: 33.08913803100586
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -69.39279174804688, Q std: 33.585174560546875
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -75.62047576904297, Q std: 34.98866271972656
+Warning: Actor gradient norm is very small: 2.1665383084577682e-07
+Q mean: -71.33589172363281, Q std: 33.54617691040039
+Step 11000: Critic Loss: 5.2307, Actor Loss: 68.1601, Q Value: -68.1561
+  Average reward: -335.277 | Average length: 100.0
+Evaluation at episode 110: -335.277
+Episode 111: Steps=100, Reward=-298.079, Buffer_size=11100
+Warning: Actor gradient norm is very small: 8.680694096410915e-07
+Q mean: -70.93124389648438, Q std: 33.55152893066406
+Warning: Actor gradient norm is very small: 4.543751823202584e-07
+Q mean: -69.9157485961914, Q std: 34.042320251464844
+  Average reward: -335.419 | Average length: 100.0
+Evaluation at episode 115: -335.419
+Warning: Actor gradient norm is very small: 5.693033556297187e-07
+Q mean: -71.843994140625, Q std: 36.68315505981445
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -73.59782409667969, Q std: 36.38801956176758
+Step 12000: Critic Loss: 5.3722, Actor Loss: 67.5715, Q Value: -67.5675
+  Average reward: -337.570 | Average length: 100.0
+Evaluation at episode 120: -337.570
+Episode 121: Steps=100, Reward=-280.210, Buffer_size=12100
+  Average reward: -338.254 | Average length: 100.0
+Evaluation at episode 125: -338.254
+Step 13000: Critic Loss: 5.5997, Actor Loss: 70.9681, Q Value: -70.9641
+  Average reward: -337.219 | Average length: 100.0
+Evaluation at episode 130: -337.219
+Episode 131: Steps=100, Reward=-280.415, Buffer_size=13100
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -76.62159729003906, Q std: 38.392845153808594
+  Average reward: -337.642 | Average length: 100.0
+Evaluation at episode 135: -337.642
+Warning: Actor gradient norm is very small: 6.894638710810801e-08
+Q mean: -75.63938903808594, Q std: 38.97770690917969
+Step 14000: Critic Loss: 4.8425, Actor Loss: 79.4082, Q Value: -79.4042
+  Average reward: -336.975 | Average length: 100.0
+Evaluation at episode 140: -336.975
+Episode 141: Steps=100, Reward=-271.114, Buffer_size=14100
+  Average reward: -336.957 | Average length: 100.0
+Evaluation at episode 145: -336.957
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -86.97164154052734, Q std: 39.475215911865234
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -85.90465545654297, Q std: 39.04598617553711
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -83.16758728027344, Q std: 38.70746612548828
+Step 15000: Critic Loss: 7.6487, Actor Loss: 86.2761, Q Value: -86.2721
+  Average reward: -337.049 | Average length: 100.0
+Evaluation at episode 150: -337.049
+Episode 151: Steps=100, Reward=-287.264, Buffer_size=15100
+  Average reward: -337.013 | Average length: 100.0
+Evaluation at episode 155: -337.013
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -88.96987915039062, Q std: 38.14618682861328
+Step 16000: Critic Loss: 4.0062, Actor Loss: 87.4434, Q Value: -87.4394
+  Average reward: -335.925 | Average length: 100.0
+Evaluation at episode 160: -335.925
+Episode 161: Steps=100, Reward=-291.167, Buffer_size=16100
+  Average reward: -342.108 | Average length: 100.0
+Evaluation at episode 165: -342.108
+Step 17000: Critic Loss: 7.3355, Actor Loss: 96.6585, Q Value: -96.6545
+  Average reward: -342.148 | Average length: 100.0
+Evaluation at episode 170: -342.148
+Episode 171: Steps=100, Reward=-286.535, Buffer_size=17100
+  Average reward: -342.643 | Average length: 100.0
+Evaluation at episode 175: -342.643
+Step 18000: Critic Loss: 4.9651, Actor Loss: 103.3657, Q Value: -103.3617
+  Average reward: -364.025 | Average length: 100.0
+Evaluation at episode 180: -364.025
+Episode 181: Steps=100, Reward=-307.318, Buffer_size=18100
+  Average reward: -365.420 | Average length: 100.0
+Evaluation at episode 185: -365.420
+Step 19000: Critic Loss: 5.3777, Actor Loss: 102.9638, Q Value: -102.9598
+  Average reward: -366.148 | Average length: 100.0
+Evaluation at episode 190: -366.148
+Episode 191: Steps=100, Reward=-308.936, Buffer_size=19100
+  Average reward: -365.403 | Average length: 100.0
+Evaluation at episode 195: -365.403
+Step 20000: Critic Loss: 5.2988, Actor Loss: 106.7414, Q Value: -106.7374
+  Average reward: -364.949 | Average length: 100.0
+Evaluation at episode 200: -364.949
+Episode 201: Steps=100, Reward=-312.857, Buffer_size=20100
+  Average reward: -363.471 | Average length: 100.0
+Evaluation at episode 205: -363.471
+Step 21000: Critic Loss: 7.7180, Actor Loss: 117.5093, Q Value: -117.5054
+  Average reward: -363.931 | Average length: 100.0
+Evaluation at episode 210: -363.931
+Episode 211: Steps=100, Reward=-311.955, Buffer_size=21100
+  Average reward: -338.324 | Average length: 100.0
+Evaluation at episode 215: -338.324
+Step 22000: Critic Loss: 4.9914, Actor Loss: 118.5323, Q Value: -118.5283
+  Average reward: -341.104 | Average length: 100.0
+Evaluation at episode 220: -341.104
+Episode 221: Steps=100, Reward=-288.784, Buffer_size=22100
+  Average reward: -340.946 | Average length: 100.0
+Evaluation at episode 225: -340.946
+Step 23000: Critic Loss: 4.4068, Actor Loss: 119.9528, Q Value: -119.9488
+  Average reward: -341.157 | Average length: 100.0
+Evaluation at episode 230: -341.157
+Episode 231: Steps=100, Reward=-287.847, Buffer_size=23100
+  Average reward: -335.093 | Average length: 100.0
+Evaluation at episode 235: -335.093
+Step 24000: Critic Loss: 5.7674, Actor Loss: 127.0956, Q Value: -127.0916
+  Average reward: -329.410 | Average length: 100.0
+Evaluation at episode 240: -329.410
+Episode 241: Steps=100, Reward=-291.487, Buffer_size=24100
+  Average reward: -330.791 | Average length: 100.0
+Evaluation at episode 245: -330.791
+Step 25000: Critic Loss: 8.5012, Actor Loss: 125.7249, Q Value: -125.7210
+  Average reward: -336.343 | Average length: 100.0
+Evaluation at episode 250: -336.343
+Episode 251: Steps=100, Reward=-282.537, Buffer_size=25100
+  Average reward: -341.588 | Average length: 100.0
+Evaluation at episode 255: -341.588
+Step 26000: Critic Loss: 7.2326, Actor Loss: 129.5783, Q Value: -129.5743
+  Average reward: -344.547 | Average length: 100.0
+Evaluation at episode 260: -344.547
+Episode 261: Steps=100, Reward=-294.663, Buffer_size=26100
+  Average reward: -341.771 | Average length: 100.0
+Evaluation at episode 265: -341.771
+Step 27000: Critic Loss: 6.3135, Actor Loss: 138.4514, Q Value: -138.4474
+  Average reward: -332.398 | Average length: 100.0
+Evaluation at episode 270: -332.398
+Episode 271: Steps=100, Reward=-294.551, Buffer_size=27100
+  Average reward: -336.612 | Average length: 100.0
+Evaluation at episode 275: -336.612
+Step 28000: Critic Loss: 11.6226, Actor Loss: 146.2058, Q Value: -146.2018
+  Average reward: -337.400 | Average length: 100.0
+Evaluation at episode 280: -337.400
+Episode 281: Steps=100, Reward=-281.594, Buffer_size=28100
+  Average reward: -328.876 | Average length: 100.0
+Evaluation at episode 285: -328.876
+Step 29000: Critic Loss: 9.9566, Actor Loss: 149.8807, Q Value: -149.8768
+  Average reward: -327.959 | Average length: 100.0
+Evaluation at episode 290: -327.959
+Episode 291: Steps=100, Reward=-275.680, Buffer_size=29100
+  Average reward: -329.858 | Average length: 100.0
+Evaluation at episode 295: -329.858
+Step 30000: Critic Loss: 5.9425, Actor Loss: 149.5750, Q Value: -149.5710
+  Average reward: -328.057 | Average length: 100.0
+Evaluation at episode 300: -328.057
+Episode 301: Steps=100, Reward=-282.556, Buffer_size=30100
+  Average reward: -329.302 | Average length: 100.0
+Evaluation at episode 305: -329.302
+Step 31000: Critic Loss: 12.2190, Actor Loss: 157.3023, Q Value: -157.2983
+  Average reward: -324.216 | Average length: 100.0
+Evaluation at episode 310: -324.216
+Episode 311: Steps=100, Reward=-292.341, Buffer_size=31100
+  Average reward: -327.781 | Average length: 100.0
+Evaluation at episode 315: -327.781
+Step 32000: Critic Loss: 10.4580, Actor Loss: 158.1330, Q Value: -158.1290
+  Average reward: -326.828 | Average length: 100.0
+Evaluation at episode 320: -326.828
+Episode 321: Steps=100, Reward=-275.272, Buffer_size=32100
+  Average reward: -327.455 | Average length: 100.0
+Evaluation at episode 325: -327.455
+Step 33000: Critic Loss: 10.8310, Actor Loss: 157.3120, Q Value: -157.3080
+  Average reward: -327.088 | Average length: 100.0
+Evaluation at episode 330: -327.088
+Episode 331: Steps=100, Reward=-277.612, Buffer_size=33100
+  Average reward: -326.496 | Average length: 100.0
+Evaluation at episode 335: -326.496
+Step 34000: Critic Loss: 6.9708, Actor Loss: 163.0584, Q Value: -163.0544
+  Average reward: -326.401 | Average length: 100.0
+Evaluation at episode 340: -326.401

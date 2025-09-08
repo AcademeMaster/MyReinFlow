@@ -1,0 +1,84 @@
+2025-09-05 21:49:57,637 INFO    StreamThr :12440 [internal.py:wandb_internal():86] W&B internal server running at pid: 12440, started at: 2025-09-05 21:49:57.636472
+2025-09-05 21:49:57,641 DEBUG   HandlerThread:12440 [handler.py:handle_request():144] handle_request: status
+2025-09-05 21:49:57,650 INFO    WriterThread:12440 [datastore.py:open_for_write():85] open: D:\PycharmProjects\MeanFLowTD3\TD3_BC-main\wandb\run-20250905_214957-5tb9mv00\run-5tb9mv00.wandb
+2025-09-05 21:49:57,652 DEBUG   SenderThread:12440 [sender.py:send():375] send: header
+2025-09-05 21:49:58,664 DEBUG   SenderThread:12440 [sender.py:send():375] send: run
+2025-09-05 21:50:03,705 DEBUG   HandlerThread:12440 [handler.py:handle_request():144] handle_request: keepalive
+2025-09-05 21:50:08,143 INFO    SenderThread:12440 [retry.py:__call__():172] Retry attempt failed:
+Traceback (most recent call last):
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\urllib3\connection.py", line 198, in _new_conn
+    sock = connection.create_connection(
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\urllib3\util\connection.py", line 85, in create_connection
+    raise err
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\urllib3\util\connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [WinError 10061] 由于目标计算机积极拒绝，无法连接。
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\urllib3\connectionpool.py", line 773, in urlopen
+    self._prepare_proxy(conn)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\urllib3\connectionpool.py", line 1042, in _prepare_proxy
+    conn.connect()
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\urllib3\connection.py", line 704, in connect
+    self.sock = sock = self._new_conn()
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\urllib3\connection.py", line 213, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPSConnection object at 0x000001CEA9D83D30>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。
+
+The above exception was the direct cause of the following exception:
+
+urllib3.exceptions.ProxyError: ('Unable to connect to proxy', NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x000001CEA9D83D30>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。'))
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\requests\adapters.py", line 667, in send
+    resp = conn.urlopen(
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\urllib3\connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\urllib3\util\retry.py", line 519, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='api.wandb.ai', port=443): Max retries exceeded with url: /graphql (Caused by ProxyError('Unable to connect to proxy', NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x000001CEA9D83D30>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。')))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\wandb\sdk\lib\retry.py", line 131, in __call__
+    result = self._call_fn(*args, **kwargs)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\wandb\sdk\internal\internal_api.py", line 285, in execute
+    return self.client.execute(*args, **kwargs)  # type: ignore
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\wandb\vendor\gql-0.2.0\wandb_gql\client.py", line 52, in execute
+    result = self._get_result(document, *args, **kwargs)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\wandb\vendor\gql-0.2.0\wandb_gql\client.py", line 60, in _get_result
+    return self.transport.execute(document, *args, **kwargs)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\wandb\sdk\lib\gql_request.py", line 55, in execute
+    request = self.session.post(self.url, **post_args)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\requests\sessions.py", line 637, in post
+    return self.request("POST", url, data=data, json=json, **kwargs)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\requests\sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\requests\sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+  File "C:\Users\32293\.conda\envs\xuance\lib\site-packages\requests\adapters.py", line 694, in send
+    raise ProxyError(e, request=request)
+requests.exceptions.ProxyError: HTTPSConnectionPool(host='api.wandb.ai', port=443): Max retries exceeded with url: /graphql (Caused by ProxyError('Unable to connect to proxy', NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x000001CEA9D83D30>: Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。')))
+2025-09-05 21:50:08,838 DEBUG   HandlerThread:12440 [handler.py:handle_request():144] handle_request: keepalive
+2025-09-05 21:50:13,891 DEBUG   HandlerThread:12440 [handler.py:handle_request():144] handle_request: keepalive
+2025-09-05 21:50:18,936 DEBUG   HandlerThread:12440 [handler.py:handle_request():144] handle_request: keepalive
+2025-09-05 21:50:23,984 DEBUG   HandlerThread:12440 [handler.py:handle_request():144] handle_request: keepalive
+2025-09-05 21:50:29,031 DEBUG   HandlerThread:12440 [handler.py:handle_request():144] handle_request: keepalive
+2025-09-05 21:50:34,087 DEBUG   HandlerThread:12440 [handler.py:handle_request():144] handle_request: keepalive
+2025-09-05 21:50:39,143 DEBUG   HandlerThread:12440 [handler.py:handle_request():144] handle_request: keepalive
+2025-09-05 21:50:44,191 DEBUG   HandlerThread:12440 [handler.py:handle_request():144] handle_request: keepalive
+2025-09-05 21:50:49,248 DEBUG   HandlerThread:12440 [handler.py:handle_request():144] handle_request: keepalive
+2025-09-05 21:50:54,290 DEBUG   HandlerThread:12440 [handler.py:handle_request():144] handle_request: keepalive
+2025-09-05 21:50:59,338 DEBUG   HandlerThread:12440 [handler.py:handle_request():144] handle_request: cancel
+2025-09-05 21:50:59,339 DEBUG   HandlerThread:12440 [handler.py:handle_request():144] handle_request: cancel
+2025-09-05 21:50:59,339 DEBUG   SenderThread:12440 [sender.py:send():384] Record cancelled: run
+2025-09-05 21:50:59,340 DEBUG   HandlerThread:12440 [handler.py:handle_request():144] handle_request: status_report
+2025-09-05 21:51:01,379 DEBUG   HandlerThread:12440 [handler.py:handle_request():144] handle_request: shutdown
+2025-09-05 21:51:01,379 INFO    HandlerThread:12440 [handler.py:finish():842] shutting down handler
+2025-09-05 21:51:02,367 INFO    WriterThread:12440 [datastore.py:close():298] close: D:\PycharmProjects\MeanFLowTD3\TD3_BC-main\wandb\run-20250905_214957-5tb9mv00\run-5tb9mv00.wandb
+2025-09-05 21:51:02,368 INFO    SenderThread:12440 [sender.py:finish():1550] shutting down sender

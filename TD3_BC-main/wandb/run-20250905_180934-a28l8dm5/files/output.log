@@ -1,0 +1,654 @@
+开始纯在线训练...
+Episode 1: Steps=100, Reward=-161.626, Buffer_size=100
+Episode 2: Steps=100, Reward=-146.779, Buffer_size=200
+Episode 3: Steps=100, Reward=-146.216, Buffer_size=300
+Episode 4: Steps=100, Reward=-138.492, Buffer_size=400
+Episode 5: Steps=100, Reward=-142.102, Buffer_size=500
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 5: -315.713
+Episode 6: Steps=100, Reward=-152.162, Buffer_size=600
+Episode 7: Steps=100, Reward=-150.266, Buffer_size=700
+Episode 8: Steps=100, Reward=-153.506, Buffer_size=800
+Episode 9: Steps=100, Reward=-159.151, Buffer_size=900
+Episode 10: Steps=100, Reward=-146.689, Buffer_size=1000
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 10: -315.713
+Episode 11: Steps=100, Reward=-154.597, Buffer_size=1100
+Episode 12: Steps=100, Reward=-145.127, Buffer_size=1200
+Episode 13: Steps=100, Reward=-142.283, Buffer_size=1300
+Episode 14: Steps=100, Reward=-151.375, Buffer_size=1400
+Episode 15: Steps=100, Reward=-155.419, Buffer_size=1500
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 15: -315.713
+Episode 16: Steps=100, Reward=-144.674, Buffer_size=1600
+Episode 17: Steps=100, Reward=-137.167, Buffer_size=1700
+Episode 18: Steps=100, Reward=-154.302, Buffer_size=1800
+Episode 19: Steps=100, Reward=-161.415, Buffer_size=1900
+Episode 20: Steps=100, Reward=-152.977, Buffer_size=2000
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 20: -315.713
+Episode 21: Steps=100, Reward=-149.027, Buffer_size=2100
+Episode 22: Steps=100, Reward=-143.110, Buffer_size=2200
+Episode 23: Steps=100, Reward=-162.393, Buffer_size=2300
+Episode 24: Steps=100, Reward=-154.070, Buffer_size=2400
+Episode 25: Steps=100, Reward=-151.250, Buffer_size=2500
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 25: -315.713
+Episode 26: Steps=100, Reward=-145.540, Buffer_size=2600
+Episode 27: Steps=100, Reward=-144.661, Buffer_size=2700
+Episode 28: Steps=100, Reward=-138.488, Buffer_size=2800
+Episode 29: Steps=100, Reward=-141.539, Buffer_size=2900
+Episode 30: Steps=100, Reward=-145.927, Buffer_size=3000
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 30: -315.713
+Episode 31: Steps=100, Reward=-153.193, Buffer_size=3100
+Episode 32: Steps=100, Reward=-157.516, Buffer_size=3200
+Episode 33: Steps=100, Reward=-142.654, Buffer_size=3300
+Episode 34: Steps=100, Reward=-162.392, Buffer_size=3400
+Episode 35: Steps=100, Reward=-138.867, Buffer_size=3500
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 35: -315.713
+Episode 36: Steps=100, Reward=-150.325, Buffer_size=3600
+Episode 37: Steps=100, Reward=-154.353, Buffer_size=3700
+Episode 38: Steps=100, Reward=-157.304, Buffer_size=3800
+Episode 39: Steps=100, Reward=-148.765, Buffer_size=3900
+Episode 40: Steps=100, Reward=-148.184, Buffer_size=4000
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 40: -315.713
+Episode 41: Steps=100, Reward=-156.010, Buffer_size=4100
+Episode 42: Steps=100, Reward=-163.713, Buffer_size=4200
+Episode 43: Steps=100, Reward=-146.180, Buffer_size=4300
+Episode 44: Steps=100, Reward=-157.520, Buffer_size=4400
+Episode 45: Steps=100, Reward=-137.354, Buffer_size=4500
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 45: -315.713
+Episode 46: Steps=100, Reward=-162.902, Buffer_size=4600
+Episode 47: Steps=100, Reward=-144.487, Buffer_size=4700
+Episode 48: Steps=100, Reward=-150.004, Buffer_size=4800
+Episode 49: Steps=100, Reward=-141.608, Buffer_size=4900
+Episode 50: Steps=100, Reward=-134.628, Buffer_size=5000
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 50: -315.713
+Episode 51: Steps=100, Reward=-269.421, Buffer_size=5100
+Warning: Actor gradient norm is very small: 5.11242438858926e-07
+Q mean: -27.891155242919922, Q std: 17.859928131103516
+Warning: Actor gradient norm is very small: 9.659654217152994e-07
+Q mean: -26.805788040161133, Q std: 18.84252166748047
+  Average reward: -342.678 | Average length: 100.0
+Evaluation at episode 55: -342.678
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -33.215030670166016, Q std: 18.42082977294922
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -31.881776809692383, Q std: 17.574186325073242
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -36.55302429199219, Q std: 20.012338638305664
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -33.974727630615234, Q std: 19.565282821655273
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -37.62586975097656, Q std: 18.5834903717041
+训练时出错: Invalid format specifier
+  Average reward: -342.881 | Average length: 100.0
+Evaluation at episode 60: -342.881
+Episode 61: Steps=100, Reward=-283.314, Buffer_size=6101
+Warning: Actor gradient norm is very small: 9.716229356537011e-08
+Q mean: -38.01355743408203, Q std: 16.032730102539062
+  Average reward: -362.892 | Average length: 100.0
+Evaluation at episode 65: -362.892
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -41.51494216918945, Q std: 18.792932510375977
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -44.00115966796875, Q std: 18.10728645324707
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -45.677303314208984, Q std: 20.277517318725586
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -40.308868408203125, Q std: 18.172698974609375
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -42.939842224121094, Q std: 17.381244659423828
+Warning: Actor gradient norm is very small: 1.527731193076862e-07
+Q mean: -47.51890563964844, Q std: 20.287208557128906
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -48.98029327392578, Q std: 19.77224349975586
+Warning: Actor gradient norm is very small: 4.707355634893698e-07
+Q mean: -49.80030059814453, Q std: 19.242477416992188
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -46.667144775390625, Q std: 21.02849769592285
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -47.30869674682617, Q std: 20.253061294555664
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -47.544254302978516, Q std: 23.15877342224121
+训练时出错: Invalid format specifier
+  Average reward: -362.989 | Average length: 100.0
+Evaluation at episode 70: -362.989
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -50.33702087402344, Q std: 23.115280151367188
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -47.8049430847168, Q std: 23.72025489807129
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -48.658424377441406, Q std: 21.486637115478516
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -47.84850311279297, Q std: 21.709375381469727
+Episode 71: Steps=100, Reward=-308.374, Buffer_size=7101
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -49.08758544921875, Q std: 22.207563400268555
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -51.24876022338867, Q std: 24.374649047851562
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -49.09840393066406, Q std: 23.091588973999023
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -50.51133346557617, Q std: 24.8976993560791
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -50.26854705810547, Q std: 22.066072463989258
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -50.37097930908203, Q std: 25.64028549194336
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -51.22834777832031, Q std: 21.752185821533203
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -49.698219299316406, Q std: 23.046960830688477
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -51.68282699584961, Q std: 23.647974014282227
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -52.014732360839844, Q std: 27.400136947631836
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -52.273643493652344, Q std: 25.296222686767578
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.840267181396484, Q std: 28.391551971435547
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -51.72492980957031, Q std: 21.794780731201172
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -52.817996978759766, Q std: 24.282508850097656
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -50.59882354736328, Q std: 20.320262908935547
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -51.85801696777344, Q std: 23.905689239501953
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -53.985145568847656, Q std: 24.53883934020996
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -52.74281311035156, Q std: 22.141176223754883
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.582550048828125, Q std: 27.165773391723633
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -50.01563262939453, Q std: 22.19443130493164
+  Average reward: -363.038 | Average length: 100.0
+Evaluation at episode 75: -363.038
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.144447326660156, Q std: 23.848596572875977
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -50.849822998046875, Q std: 23.328493118286133
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -53.351295471191406, Q std: 23.625123977661133
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.76365661621094, Q std: 25.95435333251953
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.0433235168457, Q std: 25.651582717895508
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.28240966796875, Q std: 22.90253448486328
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -51.29542922973633, Q std: 20.077133178710938
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -57.34101486206055, Q std: 27.000341415405273
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.782981872558594, Q std: 23.554874420166016
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.02733612060547, Q std: 26.48180389404297
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -53.95643615722656, Q std: 22.436243057250977
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.694541931152344, Q std: 21.974580764770508
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.97441864013672, Q std: 24.877567291259766
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.35353088378906, Q std: 23.883758544921875
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -57.4582633972168, Q std: 24.73057746887207
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.89085388183594, Q std: 23.62436294555664
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -57.92647933959961, Q std: 25.23748207092285
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -54.04924011230469, Q std: 22.86016845703125
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.892276763916016, Q std: 23.808059692382812
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.45588684082031, Q std: 25.02147674560547
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -59.49994659423828, Q std: 28.150381088256836
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.66064453125, Q std: 22.04730224609375
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -61.274131774902344, Q std: 27.100830078125
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -57.537471771240234, Q std: 24.949495315551758
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -58.70037078857422, Q std: 24.104646682739258
+训练时出错: Invalid format specifier
+  Average reward: -363.059 | Average length: 100.0
+Evaluation at episode 80: -363.059
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -60.230323791503906, Q std: 25.444581985473633
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -55.58664321899414, Q std: 23.87579917907715
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.46979522705078, Q std: 27.158891677856445
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -58.76470184326172, Q std: 26.855812072753906
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -58.0550537109375, Q std: 26.544918060302734
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.85327911376953, Q std: 24.93879508972168
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -57.78276062011719, Q std: 24.20781135559082
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -58.33808135986328, Q std: 25.339752197265625
+Episode 81: Steps=100, Reward=-305.374, Buffer_size=8101
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -58.567359924316406, Q std: 24.583892822265625
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -58.05915832519531, Q std: 28.021869659423828
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -59.60883331298828, Q std: 26.74540138244629
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.4923095703125, Q std: 22.200782775878906
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -60.29985046386719, Q std: 24.800203323364258
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -59.282997131347656, Q std: 24.730812072753906
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -58.879425048828125, Q std: 23.61504554748535
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -58.14915466308594, Q std: 25.495254516601562
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -59.07662582397461, Q std: 27.645063400268555
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -60.36374282836914, Q std: 24.30814552307129
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -57.94831848144531, Q std: 23.37934112548828
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -61.5863151550293, Q std: 26.25065040588379
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -61.88737487792969, Q std: 25.52092742919922
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -59.624168395996094, Q std: 22.3452205657959
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -64.51539611816406, Q std: 27.902923583984375
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -62.99829864501953, Q std: 25.097442626953125
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -59.48462677001953, Q std: 22.86208152770996
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -64.09249877929688, Q std: 25.67387580871582
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -56.95397186279297, Q std: 24.56214141845703
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -62.57846450805664, Q std: 24.08976936340332
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -60.66997528076172, Q std: 24.387054443359375
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -62.73318862915039, Q std: 24.995729446411133
+  Average reward: -362.707 | Average length: 100.0
+Evaluation at episode 85: -362.707
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -61.727210998535156, Q std: 26.0552921295166
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -61.23656463623047, Q std: 23.83196449279785
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -60.227867126464844, Q std: 25.378145217895508
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -63.6185302734375, Q std: 27.346315383911133
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -61.84244155883789, Q std: 24.166873931884766
+Warning: Actor gradient norm is very small: 1.1624689150678669e-07
+Q mean: -64.40943908691406, Q std: 28.751184463500977
+Warning: Actor gradient norm is very small: 7.312194886874204e-07
+Q mean: -62.85346603393555, Q std: 28.699604034423828
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -62.43242645263672, Q std: 26.908933639526367
+Warning: Actor gradient norm is very small: 1.3356909724936272e-07
+Q mean: -64.78425598144531, Q std: 26.432491302490234
+训练时出错: Invalid format specifier
+  Average reward: -367.519 | Average length: 100.0
+Evaluation at episode 90: -367.519
+Warning: Actor gradient norm is very small: 2.72861095339531e-07
+Q mean: -67.29185485839844, Q std: 29.698129653930664
+Episode 91: Steps=100, Reward=-319.580, Buffer_size=9101
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -63.78172302246094, Q std: 27.19329833984375
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -70.86923217773438, Q std: 30.60401153564453
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -70.41816711425781, Q std: 29.623199462890625
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -68.74381256103516, Q std: 26.667444229125977
+  Average reward: -363.622 | Average length: 100.0
+Evaluation at episode 95: -363.622
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -73.97100067138672, Q std: 28.65617561340332
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -72.82064819335938, Q std: 29.585046768188477
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -77.12008666992188, Q std: 33.38188934326172
+Warning: Actor gradient norm is very small: 8.455238413602651e-08
+Q mean: -73.17922973632812, Q std: 28.296091079711914
+训练时出错: Invalid format specifier
+  Average reward: -362.855 | Average length: 100.0
+Evaluation at episode 100: -362.855
+Episode 101: Steps=100, Reward=-307.828, Buffer_size=10101
+Warning: Actor gradient norm is very small: 5.7798141891098084e-08
+Q mean: -73.67867279052734, Q std: 30.737144470214844
+  Average reward: -362.885 | Average length: 100.0
+Evaluation at episode 105: -362.885
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -75.85118865966797, Q std: 32.11345291137695
+Warning: Actor gradient norm is very small: 1.649775521392204e-08
+Q mean: -85.93443298339844, Q std: 32.403038024902344
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -84.43701171875, Q std: 34.793758392333984
+训练时出错: Invalid format specifier
+  Average reward: -348.002 | Average length: 100.0
+Evaluation at episode 110: -348.002
+Episode 111: Steps=100, Reward=-294.818, Buffer_size=11101
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -83.01343536376953, Q std: 34.48491287231445
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -85.78449249267578, Q std: 36.2046012878418
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -91.53094482421875, Q std: 36.783233642578125
+  Average reward: -333.525 | Average length: 100.0
+Evaluation at episode 115: -333.525
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -87.32960510253906, Q std: 32.61333084106445
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -89.59063720703125, Q std: 37.495792388916016
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -93.95211791992188, Q std: 35.70811080932617
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -91.41636657714844, Q std: 37.53865051269531
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -89.20418548583984, Q std: 37.767112731933594
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -91.94142150878906, Q std: 36.456024169921875
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -94.70710754394531, Q std: 39.971290588378906
+训练时出错: Invalid format specifier
+  Average reward: -333.835 | Average length: 100.0
+Evaluation at episode 120: -333.835
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -92.9872817993164, Q std: 36.06666564941406
+Episode 121: Steps=100, Reward=-279.880, Buffer_size=12101
+Warning: Actor gradient norm is very small: 2.6739721128296715e-07
+Q mean: -93.8691635131836, Q std: 38.81327819824219
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -94.89930725097656, Q std: 39.64915084838867
+  Average reward: -333.698 | Average length: 100.0
+Evaluation at episode 125: -333.698
+训练时出错: Invalid format specifier
+  Average reward: -332.656 | Average length: 100.0
+Evaluation at episode 130: -332.656
+Warning: Actor gradient norm is very small: 3.884940628782975e-07
+Q mean: -103.38770294189453, Q std: 41.52618408203125
+Episode 131: Steps=100, Reward=-278.746, Buffer_size=13101
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -107.68034362792969, Q std: 43.39881896972656
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -109.47147369384766, Q std: 41.22013854980469
+  Average reward: -333.158 | Average length: 100.0
+Evaluation at episode 135: -333.158
+Warning: Actor gradient norm is very small: 5.95299223464225e-07
+Q mean: -110.41658782958984, Q std: 43.82255172729492
+Warning: Actor gradient norm is very small: 8.554840137914762e-07
+Q mean: -107.4715576171875, Q std: 42.701900482177734
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -107.10661315917969, Q std: 44.14771270751953
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -113.09132385253906, Q std: 42.68418502807617
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -110.10150146484375, Q std: 45.372467041015625
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -112.81008911132812, Q std: 43.15174102783203
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -111.06349182128906, Q std: 43.29450607299805
+训练时出错: Invalid format specifier
+  Average reward: -351.950 | Average length: 100.0
+Evaluation at episode 140: -351.950
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -119.37971496582031, Q std: 44.12343215942383
+Warning: Actor gradient norm is very small: 4.6174123266897823e-07
+Q mean: -116.9284439086914, Q std: 43.920501708984375
+Warning: Actor gradient norm is very small: 1.1227568525512936e-07
+Q mean: -117.34806823730469, Q std: 43.747802734375
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -115.01741027832031, Q std: 42.766082763671875
+Episode 141: Steps=100, Reward=-292.419, Buffer_size=14101
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -113.72383117675781, Q std: 47.049705505371094
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -113.15435028076172, Q std: 46.45891189575195
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -116.18203735351562, Q std: 44.60165023803711
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -110.44335174560547, Q std: 46.99089431762695
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -114.02178955078125, Q std: 44.604698181152344
+Warning: Actor gradient norm is very small: 4.125047629666678e-07
+Q mean: -116.60761260986328, Q std: 46.78282165527344
+  Average reward: -336.626 | Average length: 100.0
+Evaluation at episode 145: -336.626
+Warning: Actor gradient norm is very small: 2.0402962200941995e-07
+Q mean: -120.12544250488281, Q std: 43.68552780151367
+训练时出错: Invalid format specifier
+  Average reward: -348.885 | Average length: 100.0
+Evaluation at episode 150: -348.885
+Episode 151: Steps=100, Reward=-299.864, Buffer_size=15101
+Warning: Actor gradient norm is very small: 0.0
+Q mean: -120.896728515625, Q std: 46.35292053222656
+Warning: Actor gradient norm is very small: 3.9136744951301165e-07
+Q mean: -122.46437072753906, Q std: 48.43644714355469
+  Average reward: -362.322 | Average length: 100.0
+Evaluation at episode 155: -362.322
+训练时出错: Invalid format specifier
+  Average reward: -362.196 | Average length: 100.0
+Evaluation at episode 160: -362.196
+Episode 161: Steps=100, Reward=-315.689, Buffer_size=16101
+  Average reward: -362.726 | Average length: 100.0
+Evaluation at episode 165: -362.726
+训练时出错: Invalid format specifier
+  Average reward: -363.154 | Average length: 100.0
+Evaluation at episode 170: -363.154
+Episode 171: Steps=100, Reward=-308.495, Buffer_size=17101
+  Average reward: -362.919 | Average length: 100.0
+Evaluation at episode 175: -362.919
+训练时出错: Invalid format specifier
+  Average reward: -365.421 | Average length: 100.0
+Evaluation at episode 180: -365.421
+Episode 181: Steps=100, Reward=-312.491, Buffer_size=18101
+  Average reward: -362.710 | Average length: 100.0
+Evaluation at episode 185: -362.710
+训练时出错: Invalid format specifier
+  Average reward: -342.105 | Average length: 100.0
+Evaluation at episode 190: -342.105
+Episode 191: Steps=100, Reward=-286.857, Buffer_size=19101
+  Average reward: -341.483 | Average length: 100.0
+Evaluation at episode 195: -341.483
+训练时出错: Invalid format specifier
+  Average reward: -342.304 | Average length: 100.0
+Evaluation at episode 200: -342.304
+Episode 201: Steps=100, Reward=-284.937, Buffer_size=20101
+  Average reward: -341.006 | Average length: 100.0
+Evaluation at episode 205: -341.006
+训练时出错: Invalid format specifier
+  Average reward: -339.979 | Average length: 100.0
+Evaluation at episode 210: -339.979
+Episode 211: Steps=100, Reward=-296.439, Buffer_size=21101
+  Average reward: -340.521 | Average length: 100.0
+Evaluation at episode 215: -340.521
+训练时出错: Invalid format specifier
+  Average reward: -337.319 | Average length: 100.0
+Evaluation at episode 220: -337.319
+Episode 221: Steps=100, Reward=-282.091, Buffer_size=22101
+  Average reward: -335.226 | Average length: 100.0
+Evaluation at episode 225: -335.226
+训练时出错: Invalid format specifier
+  Average reward: -334.621 | Average length: 100.0
+Evaluation at episode 230: -334.621
+Episode 231: Steps=100, Reward=-288.405, Buffer_size=23101
+  Average reward: -334.432 | Average length: 100.0
+Evaluation at episode 235: -334.432
+训练时出错: Invalid format specifier
+  Average reward: -332.230 | Average length: 100.0
+Evaluation at episode 240: -332.230
+Episode 241: Steps=100, Reward=-294.004, Buffer_size=24101
+  Average reward: -332.562 | Average length: 100.0
+Evaluation at episode 245: -332.562
+训练时出错: Invalid format specifier
+  Average reward: -333.935 | Average length: 100.0
+Evaluation at episode 250: -333.935
+Episode 251: Steps=100, Reward=-275.113, Buffer_size=25101
+  Average reward: -333.121 | Average length: 100.0
+Evaluation at episode 255: -333.121
+训练时出错: Invalid format specifier
+  Average reward: -334.185 | Average length: 100.0
+Evaluation at episode 260: -334.185
+Episode 261: Steps=100, Reward=-289.446, Buffer_size=26101
+  Average reward: -322.183 | Average length: 100.0
+Evaluation at episode 265: -322.183
+训练时出错: Invalid format specifier
+  Average reward: -333.829 | Average length: 100.0
+Evaluation at episode 270: -333.829
+Episode 271: Steps=100, Reward=-297.768, Buffer_size=27101
+  Average reward: -328.528 | Average length: 100.0
+Evaluation at episode 275: -328.528
+训练时出错: Invalid format specifier
+  Average reward: -332.081 | Average length: 100.0
+Evaluation at episode 280: -332.081
+Episode 281: Steps=100, Reward=-273.068, Buffer_size=28101
+  Average reward: -339.946 | Average length: 100.0
+Evaluation at episode 285: -339.946
+训练时出错: Invalid format specifier
+  Average reward: -339.761 | Average length: 100.0
+Evaluation at episode 290: -339.761
+Episode 291: Steps=100, Reward=-284.032, Buffer_size=29101
+  Average reward: -359.045 | Average length: 100.0
+Evaluation at episode 295: -359.045
+训练时出错: Invalid format specifier
+  Average reward: -360.210 | Average length: 100.0
+Evaluation at episode 300: -360.210
+Episode 301: Steps=100, Reward=-314.945, Buffer_size=30101
+  Average reward: -361.593 | Average length: 100.0
+Evaluation at episode 305: -361.593
+训练时出错: Invalid format specifier
+  Average reward: -343.328 | Average length: 100.0
+Evaluation at episode 310: -343.328
+Episode 311: Steps=100, Reward=-307.030, Buffer_size=31101
+  Average reward: -344.992 | Average length: 100.0
+Evaluation at episode 315: -344.992
+训练时出错: Invalid format specifier
+  Average reward: -341.340 | Average length: 100.0
+Evaluation at episode 320: -341.340
+Episode 321: Steps=100, Reward=-289.785, Buffer_size=32101
+  Average reward: -331.257 | Average length: 100.0
+Evaluation at episode 325: -331.257
+训练时出错: Invalid format specifier
+  Average reward: -321.884 | Average length: 100.0
+Evaluation at episode 330: -321.884
+Episode 331: Steps=100, Reward=-264.171, Buffer_size=33101
+  Average reward: -316.891 | Average length: 100.0
+Evaluation at episode 335: -316.891
+训练时出错: Invalid format specifier
+  Average reward: -319.030 | Average length: 100.0
+Evaluation at episode 340: -319.030
+Episode 341: Steps=100, Reward=-264.641, Buffer_size=34101
+  Average reward: -326.945 | Average length: 100.0
+Evaluation at episode 345: -326.945
+训练时出错: Invalid format specifier
+  Average reward: -322.156 | Average length: 100.0
+Evaluation at episode 350: -322.156
+Episode 351: Steps=100, Reward=-261.873, Buffer_size=35101
+  Average reward: -327.066 | Average length: 100.0
+Evaluation at episode 355: -327.066
+训练时出错: Invalid format specifier
+  Average reward: -328.079 | Average length: 100.0
+Evaluation at episode 360: -328.079
+Episode 361: Steps=100, Reward=-275.861, Buffer_size=36101
+  Average reward: -326.568 | Average length: 100.0
+Evaluation at episode 365: -326.568
+训练时出错: Invalid format specifier
+  Average reward: -326.931 | Average length: 100.0
+Evaluation at episode 370: -326.931
+Episode 371: Steps=100, Reward=-267.800, Buffer_size=37101
+  Average reward: -321.016 | Average length: 100.0
+Evaluation at episode 375: -321.016
+训练时出错: Invalid format specifier
+  Average reward: -320.585 | Average length: 100.0
+Evaluation at episode 380: -320.585
+Episode 381: Steps=100, Reward=-264.885, Buffer_size=38101
+  Average reward: -320.436 | Average length: 100.0
+Evaluation at episode 385: -320.436
+训练时出错: Invalid format specifier
+  Average reward: -321.558 | Average length: 100.0
+Evaluation at episode 390: -321.558
+Episode 391: Steps=100, Reward=-260.044, Buffer_size=39101
+  Average reward: -322.440 | Average length: 100.0
+Evaluation at episode 395: -322.440
+训练时出错: Invalid format specifier
+  Average reward: -320.176 | Average length: 100.0
+Evaluation at episode 400: -320.176
+Episode 401: Steps=100, Reward=-268.029, Buffer_size=40101
+  Average reward: -316.923 | Average length: 100.0
+Evaluation at episode 405: -316.923
+训练时出错: Invalid format specifier
+  Average reward: -323.023 | Average length: 100.0
+Evaluation at episode 410: -323.023
+Episode 411: Steps=100, Reward=-265.203, Buffer_size=41101
+  Average reward: -322.881 | Average length: 100.0
+Evaluation at episode 415: -322.881
+训练时出错: Invalid format specifier
+  Average reward: -323.113 | Average length: 100.0
+Evaluation at episode 420: -323.113
+Episode 421: Steps=100, Reward=-267.506, Buffer_size=42101
+  Average reward: -324.268 | Average length: 100.0
+Evaluation at episode 425: -324.268
+训练时出错: Invalid format specifier
+  Average reward: -324.722 | Average length: 100.0
+Evaluation at episode 430: -324.722
+Episode 431: Steps=100, Reward=-270.858, Buffer_size=43101
+  Average reward: -322.885 | Average length: 100.0
+Evaluation at episode 435: -322.885
+训练时出错: Invalid format specifier
+  Average reward: -320.901 | Average length: 100.0
+Evaluation at episode 440: -320.901
+Episode 441: Steps=100, Reward=-268.346, Buffer_size=44101
+  Average reward: -321.876 | Average length: 100.0
+Evaluation at episode 445: -321.876
+训练时出错: Invalid format specifier
+  Average reward: -323.922 | Average length: 100.0
+Evaluation at episode 450: -323.922
+Episode 451: Steps=100, Reward=-275.585, Buffer_size=45101
+  Average reward: -336.649 | Average length: 100.0
+Evaluation at episode 455: -336.649
+训练时出错: Invalid format specifier
+  Average reward: -338.313 | Average length: 100.0
+Evaluation at episode 460: -338.313
+Episode 461: Steps=100, Reward=-293.879, Buffer_size=46101
+  Average reward: -347.282 | Average length: 100.0
+Evaluation at episode 465: -347.282
+训练时出错: Invalid format specifier
+  Average reward: -338.217 | Average length: 100.0
+Evaluation at episode 470: -338.217
+Episode 471: Steps=100, Reward=-282.836, Buffer_size=47101
+  Average reward: -338.751 | Average length: 100.0
+Evaluation at episode 475: -338.751
+Traceback (most recent call last):
+  File "d:\PycharmProjects\MeanFLowTD3\TD3_BC-main\pure_online_train.py", line 346, in <module>
+    print("开始纯在线训练...")
+  File "d:\PycharmProjects\MeanFLowTD3\TD3_BC-main\pure_online_train.py", line 142, in pure_online_train_policy
+    train_info = policy.train(replay_buffer, batch_size)
+  File "d:\PycharmProjects\MeanFLowTD3\TD3_BC-main\TD3_BC.py", line 517, in train
+    total_grad_norm = 0
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "d:\PycharmProjects\MeanFLowTD3\TD3_BC-main\pure_online_train.py", line 346, in <module>
+    print("开始纯在线训练...")
+  File "d:\PycharmProjects\MeanFLowTD3\TD3_BC-main\pure_online_train.py", line 142, in pure_online_train_policy
+    train_info = policy.train(replay_buffer, batch_size)
+  File "d:\PycharmProjects\MeanFLowTD3\TD3_BC-main\TD3_BC.py", line 517, in train
+    total_grad_norm = 0
+KeyboardInterrupt

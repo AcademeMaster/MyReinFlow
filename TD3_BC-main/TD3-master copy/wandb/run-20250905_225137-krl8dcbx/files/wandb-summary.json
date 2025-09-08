@@ -1,0 +1,1 @@
+{"timestep": 5000, "episode_num": 25, "episode_reward": -1349.2928007288492, "episode_length": 200, "_timestamp": 1757083907.2216582, "_runtime": 10.185608148574829, "_step": 25, "eval_reward": -1525.059895716669, "eval_episode": 2, "_wandb": {"runtime": 5}}

@@ -1,0 +1,73 @@
+{
+    "os": "Windows-10-10.0.26100-SP0",
+    "python": "3.10.18",
+    "heartbeatAt": "2025-09-05T09:55:31.852470",
+    "startedAt": "2025-09-05T09:55:29.796115",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "--policy",
+        "TD3_BC",
+        "--env",
+        "mujoco/pusher/expert-v0",
+        "--seed",
+        "0",
+        "--max_timesteps",
+        "100000",
+        "--eval_freq",
+        "5000",
+        "--batch_size",
+        "256",
+        "--expl_noise",
+        "0.3",
+        "--start_timesteps",
+        "5000",
+        "--save_model",
+        "--use_wandb",
+        "--wandb_project",
+        "TD3_Online_Training",
+        "--wandb_entity",
+        "ucas-feng"
+    ],
+    "state": "running",
+    "program": "D:\\PycharmProjects\\MeanFLowTD3\\TD3_BC-main\\pure_online_train.py",
+    "codePath": "TD3_BC-main\\pure_online_train.py",
+    "git": {
+        "remote": "https://github.com/AcademeMaster/MyReinFlow.git",
+        "commit": "7b3757e58e232917d98e3d3121edc46ed5dde512"
+    },
+    "email": "3229321281@qq.com",
+    "root": "D:/PycharmProjects/MeanFLowTD3",
+    "host": "feng",
+    "username": "32293",
+    "executable": "C:\\Users\\32293\\.conda\\envs\\xuance\\python.exe",
+    "cpu_count": 16,
+    "cpu_count_logical": 24,
+    "cpu_freq": {
+        "current": 1453.0,
+        "min": 0.0,
+        "max": 2100.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 1453.0,
+            "min": 0.0,
+            "max": 2100.0
+        }
+    ],
+    "disk": {
+        "total": 652.8701133728027,
+        "used": 18.54676055908203
+    },
+    "gpu": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce RTX 5060 Laptop GPU",
+            "memory_total": 8546942976
+        }
+    ],
+    "memory": {
+        "total": 15.726753234863281
+    }
+}

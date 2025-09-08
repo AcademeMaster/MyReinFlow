@@ -1,0 +1,153 @@
+开始纯在线训练...
+Episode 1: Steps=100, Reward=-153.525, Buffer_size=100
+Episode 2: Steps=100, Reward=-154.584, Buffer_size=200
+Episode 3: Steps=100, Reward=-145.092, Buffer_size=300
+Episode 4: Steps=100, Reward=-136.994, Buffer_size=400
+Episode 5: Steps=100, Reward=-146.889, Buffer_size=500
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 5: -315.713
+Episode 6: Steps=100, Reward=-161.390, Buffer_size=600
+Episode 7: Steps=100, Reward=-148.100, Buffer_size=700
+Episode 8: Steps=100, Reward=-151.155, Buffer_size=800
+Episode 9: Steps=100, Reward=-151.006, Buffer_size=900
+Episode 10: Steps=100, Reward=-147.927, Buffer_size=1000
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 10: -315.713
+Episode 11: Steps=100, Reward=-151.770, Buffer_size=1100
+Episode 12: Steps=100, Reward=-153.804, Buffer_size=1200
+Episode 13: Steps=100, Reward=-144.040, Buffer_size=1300
+Episode 14: Steps=100, Reward=-138.947, Buffer_size=1400
+Episode 15: Steps=100, Reward=-161.204, Buffer_size=1500
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 15: -315.713
+Episode 16: Steps=100, Reward=-146.131, Buffer_size=1600
+Episode 17: Steps=100, Reward=-148.626, Buffer_size=1700
+Episode 18: Steps=100, Reward=-145.629, Buffer_size=1800
+Episode 19: Steps=100, Reward=-155.451, Buffer_size=1900
+Episode 20: Steps=100, Reward=-154.411, Buffer_size=2000
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 20: -315.713
+Episode 21: Steps=100, Reward=-157.285, Buffer_size=2100
+Episode 22: Steps=100, Reward=-149.680, Buffer_size=2200
+Episode 23: Steps=100, Reward=-157.054, Buffer_size=2300
+Episode 24: Steps=100, Reward=-154.585, Buffer_size=2400
+Episode 25: Steps=100, Reward=-137.151, Buffer_size=2500
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 25: -315.713
+Episode 26: Steps=100, Reward=-161.068, Buffer_size=2600
+Episode 27: Steps=100, Reward=-155.007, Buffer_size=2700
+Episode 28: Steps=100, Reward=-142.300, Buffer_size=2800
+Episode 29: Steps=100, Reward=-142.741, Buffer_size=2900
+Episode 30: Steps=100, Reward=-152.244, Buffer_size=3000
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 30: -315.713
+Episode 31: Steps=100, Reward=-139.957, Buffer_size=3100
+Episode 32: Steps=100, Reward=-154.953, Buffer_size=3200
+Episode 33: Steps=100, Reward=-145.033, Buffer_size=3300
+Episode 34: Steps=100, Reward=-141.124, Buffer_size=3400
+Episode 35: Steps=100, Reward=-146.721, Buffer_size=3500
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 35: -315.713
+Episode 36: Steps=100, Reward=-162.330, Buffer_size=3600
+Episode 37: Steps=100, Reward=-151.195, Buffer_size=3700
+Episode 38: Steps=100, Reward=-143.402, Buffer_size=3800
+Episode 39: Steps=100, Reward=-156.974, Buffer_size=3900
+Episode 40: Steps=100, Reward=-145.241, Buffer_size=4000
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 40: -315.713
+Episode 41: Steps=100, Reward=-138.293, Buffer_size=4100
+Episode 42: Steps=100, Reward=-141.227, Buffer_size=4200
+Episode 43: Steps=100, Reward=-151.397, Buffer_size=4300
+Episode 44: Steps=100, Reward=-146.565, Buffer_size=4400
+Episode 45: Steps=100, Reward=-150.098, Buffer_size=4500
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 45: -315.713
+Episode 46: Steps=100, Reward=-151.008, Buffer_size=4600
+Episode 47: Steps=100, Reward=-159.225, Buffer_size=4700
+Episode 48: Steps=100, Reward=-160.087, Buffer_size=4800
+Episode 49: Steps=100, Reward=-153.769, Buffer_size=4900
+Episode 50: Steps=100, Reward=-141.598, Buffer_size=5000
+  Average reward: -315.713 | Average length: 100.0
+Evaluation at episode 50: -315.713
+Episode 51: Steps=100, Reward=-260.899, Buffer_size=5100
+  Average reward: -341.019 | Average length: 100.0
+Evaluation at episode 55: -341.019
+  Average reward: -341.147 | Average length: 100.0
+Evaluation at episode 60: -341.147
+Episode 61: Steps=100, Reward=-289.326, Buffer_size=6100
+  Average reward: -365.449 | Average length: 100.0
+Evaluation at episode 65: -365.449
+  Average reward: -365.490 | Average length: 100.0
+Evaluation at episode 70: -365.490
+Episode 71: Steps=100, Reward=-309.453, Buffer_size=7100
+  Average reward: -361.508 | Average length: 100.0
+Evaluation at episode 75: -361.508
+  Average reward: -361.796 | Average length: 100.0
+Evaluation at episode 80: -361.796
+Episode 81: Steps=100, Reward=-301.915, Buffer_size=8100
+  Average reward: -361.745 | Average length: 100.0
+Evaluation at episode 85: -361.745
+  Average reward: -361.728 | Average length: 100.0
+Evaluation at episode 90: -361.728
+Episode 91: Steps=100, Reward=-316.306, Buffer_size=9100
+  Average reward: -361.731 | Average length: 100.0
+Evaluation at episode 95: -361.731
+  Average reward: -360.897 | Average length: 100.0
+Evaluation at episode 100: -360.897
+Episode 101: Steps=100, Reward=-308.909, Buffer_size=10100
+  Average reward: -361.056 | Average length: 100.0
+Evaluation at episode 105: -361.056
+  Average reward: -345.879 | Average length: 100.0
+Evaluation at episode 110: -345.879
+Episode 111: Steps=100, Reward=-288.428, Buffer_size=11100
+  Average reward: -350.200 | Average length: 100.0
+Evaluation at episode 115: -350.200
+  Average reward: -350.831 | Average length: 100.0
+Evaluation at episode 120: -350.831
+Episode 121: Steps=100, Reward=-299.018, Buffer_size=12100
+  Average reward: -343.023 | Average length: 100.0
+Evaluation at episode 125: -343.023
+  Average reward: -332.920 | Average length: 100.0
+Evaluation at episode 130: -332.920
+Episode 131: Steps=100, Reward=-282.947, Buffer_size=13100
+  Average reward: -333.745 | Average length: 100.0
+Evaluation at episode 135: -333.745
+  Average reward: -333.630 | Average length: 100.0
+Evaluation at episode 140: -333.630
+Episode 141: Steps=100, Reward=-278.078, Buffer_size=14100
+  Average reward: -334.930 | Average length: 100.0
+Evaluation at episode 145: -334.930
+  Average reward: -335.144 | Average length: 100.0
+Evaluation at episode 150: -335.144
+Episode 151: Steps=100, Reward=-279.698, Buffer_size=15100
+  Average reward: -334.947 | Average length: 100.0
+Evaluation at episode 155: -334.947
+  Average reward: -336.757 | Average length: 100.0
+Evaluation at episode 160: -336.757
+Episode 161: Steps=100, Reward=-290.030, Buffer_size=16100
+  Average reward: -335.524 | Average length: 100.0
+Evaluation at episode 165: -335.524
+  Average reward: -334.535 | Average length: 100.0
+Evaluation at episode 170: -334.535
+Episode 171: Steps=100, Reward=-277.613, Buffer_size=17100
+  Average reward: -328.484 | Average length: 100.0
+Evaluation at episode 175: -328.484
+  Average reward: -330.744 | Average length: 100.0
+Evaluation at episode 180: -330.744
+Episode 181: Steps=100, Reward=-267.683, Buffer_size=18100
+  Average reward: -334.797 | Average length: 100.0
+Evaluation at episode 185: -334.797
+  Average reward: -335.118 | Average length: 100.0
+Evaluation at episode 190: -335.118
+Episode 191: Steps=100, Reward=-277.039, Buffer_size=19100
+  Average reward: -331.182 | Average length: 100.0
+Evaluation at episode 195: -331.182
+  Average reward: -331.979 | Average length: 100.0
+Evaluation at episode 200: -331.979
+Episode 201: Steps=100, Reward=-278.992, Buffer_size=20100
+  Average reward: -337.014 | Average length: 100.0
+Evaluation at episode 205: -337.014
+  Average reward: -339.083 | Average length: 100.0
+Evaluation at episode 210: -339.083
+Episode 211: Steps=100, Reward=-297.751, Buffer_size=21100
+  Average reward: -342.319 | Average length: 100.0
