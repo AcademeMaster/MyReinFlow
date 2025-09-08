@@ -278,7 +278,7 @@ if __name__ == "__main__":
     print(f"结果已保存到: {exp_dir}")
     print("================\n")
 
-    # 最终评估
+    # 最终评估，打开渲染
     if config.render_eval:
         print("开始最终评估（带渲染）...")
         eval_policy(agent, config.env_name, config.seed, render=True)
