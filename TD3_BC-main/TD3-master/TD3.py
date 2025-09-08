@@ -1,3 +1,4 @@
+# version 1.0
 import random
 import copy
 import gymnasium as gym
